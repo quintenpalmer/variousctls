@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# Capture entire command passed as command line arguments to this script
+COUNTER=$1
+shift
+CMD=$1
+shift
+ARGS=$@
+
+# Sets IFS (Internal Field Separator) to nothing that all original spaces are preserved
+# We want to capture the line as-is and do not wish to change it in any way
+IFS=''
+# Read first line as the header line to preserve and then print it back out
+for (( i = 0 ; i < ${COUNTER} ; i++ ));  do
+    read header
+    echo $header
+done
+
+# run the captured command with the rest of standard input
+$CMD $ARGS < /dev/stdin
