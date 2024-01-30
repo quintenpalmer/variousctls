@@ -1,0 +1,37 @@
+#!/bin/bash
+
+set -e
+
+display_help() {
+    echo "usage:"
+    echo "  brightnessctl up"
+    echo "  brightnessctl down"
+    echo "  brightnessctl help"
+}
+
+function move_brightness() {
+    OPERATION=$1
+
+    CURRENT_BRIGHTNESS=$(xbacklight -get)
+
+    CONFIG_FILE=~/.config/volumectl/config
+
+    if [ $# -eq 3 ]; then
+        CONFIG_FILE=$2
+    fi
+
+    BRIGHTNESS_TO_SET=$(stepper $OPERATION $CURRENT_BRIGHTNESS $CONFIG_FILE)
+
+    xbacklight -set "${BRIGHTNESS_TO_SET}"
+}
+
+main() {
+    if [ $# -lt 1 ]; then
+        display_help
+        exit
+    fi
+
+    move_brightness $@
+}
+
+main $@
