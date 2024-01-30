@@ -1,0 +1,115 @@
+#!/bin/bash
+
+set -e
+#set -x
+
+display_help() {
+    echo "usage:"
+    echo "  volumectl app <app> up"
+    echo "  volumectl app <app> down"
+    echo "  volumectl app <app> get"
+    echo "  volumectl system up"
+    echo "  volumectl system down"
+    echo "  volumectl help"
+}
+
+function system_volume() {
+    OPERATION=$1
+
+    CURRENT_VOLUME=$(wpctl get-volume @DEFAULT_SINK@ | cut -d ':' -f 2 | cut -d '.' -f 2)
+
+    CONFIG_FILE=~/.config/volumectl/config
+
+    if [ $# -eq 3 ]; then
+        CONFIG_FILE=$2
+    fi
+
+    VOLUME_TO_SET=$(stepper $OPERATION $CURRENT_VOLUME $CONFIG_FILE)
+
+    wpctl set-volume @DEFAULT_SINK@ "${VOLUME_TO_SET}%"
+}
+
+function app_volume() {
+    if [ $# -lt 2 ]; then
+        echo "must supply <app> <direction>"
+        echo "  where <app> is the name of the pulse app to control"
+        echo "  and <direction> is 'up' or 'down'"
+        exit
+    fi
+
+    APP_NAME=$1
+    DIRECTION=$2
+
+    VOLUME_AMOUNT="4"
+    if [ $# -eq 3 ]; then
+        VOLUME_AMOUNT=$3
+    fi
+
+    if [ $DIRECTION == "get" ]; then
+        echo $(pactl list sink-inputs \
+            | while read -r line; do \
+                echo $line \
+                | grep -oP 'application.name = "\K[^"]+' ; echo -n $line \
+                | grep -oP 'Volume: front-left: [0-9]+ /[ ]+\K[0-9]+%' ; done \
+            | paste - - \
+            | rg $APP_NAME \
+            | cut -d $'\t' -f 1)
+
+        exit
+
+    else
+        if [ $DIRECTION == "up" ]; then
+            VOLUME_CHANGE="+${VOLUME_AMOUNT}%"
+
+        elif [ $DIRECTION == "down" ]; then
+            VOLUME_CHANGE="-${VOLUME_AMOUNT}%"
+
+        else
+            echo "<direction> must be 'up' or 'down'"
+            display_help
+            exit
+        fi
+    fi
+
+    pactl \
+        set-sink-input-volume \
+        $(pactl list sink-inputs \
+            | while read -r line; do \
+                echo $line \
+                | grep -oP 'Sink Input #\K[^"]+' ; echo -n $line \
+                | grep -oP 'application.name = "\K[^"]+' ; done \
+            | paste - - \
+            | rg $APP_NAME \
+            | cut -d $'\t' -f 1) \
+            $VOLUME_CHANGE
+
+    pkill -SIGRTMIN+5 i3status-rs
+}
+
+main() {
+    if [ $# -lt 1 ]; then
+        display_help
+        exit
+    fi
+
+    COMMAND=$1
+
+    shift
+
+    if [ ${COMMAND} == "app" ]; then
+        app_volume $@
+
+    elif [ ${COMMAND} == "system" ]; then
+        system_volume $@
+
+    elif [ ${COMMAND} == "help" ] || [ ${COMMAND} == "-h" ] || [ ${COMMAND} == "--help" ]; then
+        display_help
+        exit
+
+    else
+        display_help
+        exit
+    fi
+}
+
+main $@
