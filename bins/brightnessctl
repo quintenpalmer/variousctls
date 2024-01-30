@@ -14,7 +14,7 @@ function move_brightness() {
 
     CURRENT_BRIGHTNESS=$(xbacklight -get)
 
-    CONFIG_FILE=~/.config/volumectl/config
+    CONFIG_FILE=~/.config/brightnessctl/config
 
     if [ $# -eq 3 ]; then
         CONFIG_FILE=$2
