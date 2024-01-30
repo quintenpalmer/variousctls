@@ -1,0 +1,75 @@
+#!/bin/bash
+
+set -e
+#set -x
+
+display_help() {
+    echo "usage:"
+    echo "  btctl repl"
+    echo "  btctl start"
+    echo "  btctl stop"
+    echo "  btctl on"
+    echo "  btctl off"
+    echo "  btctl help"
+}
+
+if [ $# -lt 1 ]; then
+    display_help
+    exit
+fi
+
+COMMAND=$1
+
+if [ ${COMMAND} == "on" ] || [ ${COMMAND} == "start" ]; then
+    set -x
+    set +e
+
+    doas rfkill unblock bluetooth
+
+    sleep 1
+
+    doas systemctl start bluetooth
+
+    sleep 1
+
+    if [ $# -eq 2 ]; then
+        if [ $2 == "repl" ]; then
+            bluetoothctl power on
+            bluetoothctl
+        fi
+    else
+        bluetoothctl --timeout 2 power on
+    fi
+
+elif [ ${COMMAND} == "off" ] || [ ${COMMAND} == "stop" ]; then
+    set -x
+    set +e
+
+    if [ $# -eq 2 ]; then
+        if [ $2 == "repl" ]; then
+            bluetoothctl power off
+        fi
+    else
+        # bluetoothctl --timeout 2 power off
+        echo "skipping power off"
+    fi
+
+    doas systemctl stop bluetooth
+
+    doas rfkill block bluetooth
+
+elif [ ${COMMAND} == "status" ]; then
+    systemctl status bluetooth | rg Active
+    rfkill | rg bluetooth
+
+elif [ ${COMMAND} == "repl" ]; then
+    bluetoothctl
+
+elif [ ${COMMAND} == "help" ] || [ ${COMMAND} == "-h" ] || [ ${COMMAND} == "--help" ]; then
+    display_help
+    exit
+
+else
+    display_help
+    exit
+fi
