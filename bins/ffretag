@@ -1,0 +1,17 @@
+#!/bin/bash
+
+mkdir -p /tmp/ffretag
+
+FULL_FILENAME=$1
+
+LOCAL_FILENAME=$(basename "${FULL_FILENAME}")
+
+METADATA=$2
+
+mv "${FULL_FILENAME}" /tmp/ffretag/
+
+ffmpeg -i "/tmp/ffretag/${LOCAL_FILENAME}" -c copy -metadata "${METADATA}" "${FULL_FILENAME}"
+
+if [ $? -ne 0 ]; then
+    mv "/tmp/ffretag/${LOCAL_FILENAME}" "${FULL_FILENAME}"
+fi
