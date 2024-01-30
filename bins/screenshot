@@ -1,0 +1,32 @@
+#!/bin/bash
+
+function gen_screenshot_dir() {
+    echo "${HOME}/screenshots/$(date +%y%m%d_%Hh%Mm%Ss).png"
+}
+
+function findfocus() {
+    echo "$(swaymsg -t get_tree | findfocusjq)"
+}
+
+function findfocusjq() {
+    jq -j '.. | select(.type?) | select(.focused).rect | "\(.x),\(.y) \(.width)x\(.height)"'
+}
+
+function screenshotfocus() {
+    grim -g "$(findfocus)" "$(gen_screenshot_dir)";
+    imvs
+}
+
+function screenshot() {
+    grim -g "$(slurp)" "$(gen_screenshot_dir)";
+    imvs
+}
+
+
+COMMAND=$1
+
+if [ "${COMMAND}" == "focused" ]; then
+    screenshotfocus
+else
+    screenshot
+fi
