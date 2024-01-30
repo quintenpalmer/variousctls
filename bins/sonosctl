@@ -1,0 +1,308 @@
+#!/bin/bash
+
+set -e
+#set -x
+
+display_help() {
+    echo "usage:"
+    echo "  sonosctl linein"
+    echo "  sonosctl play"
+    echo "  sonosctl on"
+    echo "  sonosctl start"
+    echo "  sonosctl stop"
+    echo "  sonosctl volume <up|down> <amount>"
+    echo "  sonosctl volume status"
+    echo "  sonosctl volume simplestatus"
+    echo "  sonosctl help"
+}
+
+if [ $# -lt 1 ]; then
+    display_help
+    exit
+fi
+
+COMMAND=$1
+
+SONOS_CURRENT_NAME=$(jq -r ".current.name" ~/.config/sonosctl/config.json)
+SONOS_IP=$(jq -r ".known.${SONOS_CURRENT_NAME}.ip" ~/.config/sonosctl/config.json)
+SONOS_MAC=$(jq -r ".known.${SONOS_CURRENT_NAME}.mac" ~/.config/sonosctl/config.json)
+
+function sonos_print_config() {
+    cat ~/.config/sonosctl/config.json
+}
+
+function status_on() {
+    cat ~/.config/sonosctl/config.json | jq ".status.on |= true" > ~/.config/sonosctl/config.json.new
+    mv ~/.config/sonosctl/config.json.new ~/.config/sonosctl/config.json
+}
+
+function status_off() {
+    cat ~/.config/sonosctl/config.json | jq ".status.on |= false" > ~/.config/sonosctl/config.json.new
+    mv ~/.config/sonosctl/config.json.new ~/.config/sonosctl/config.json
+}
+
+function status_query() {
+    jq '.status.on' ~/.config/sonosctl/config.json
+}
+
+function sonos_linein() {
+    curl \
+        -sS \
+        -X POST \
+        --data-raw " \
+    <s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"> \
+      <s:Body> \
+        <u:SetAVTransportURI xmlns:u=\"urn:schemas-upnp-org:service:AVTransport:1\"> \
+          <InstanceID>0</InstanceID> \
+          <CurrentURI>x-rincon-stream:RINCON_${SONOS_MAC}01400</CurrentURI> \
+          <CurrentURIMetaData/> \
+        </u:SetAVTransportURI> \
+      </s:Body> \
+    </s:Envelope> \
+    " \
+        -H 'Content-Type: text/xml' \
+        -H 'SOAPACTION: urn:schemas-upnp-org:service:AVTransport:1#SetAVTransportURI' \
+        http://${SONOS_IP}:1400/MediaRenderer/AVTransport/Control | \
+    xmllint -format -
+    status_on
+}
+
+function sonos_play() {
+    curl \
+        -sS \
+        -X POST \
+        --data-raw '
+    <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
+      <s:Body>
+        <u:Play xmlns:u="urn:schemas-upnp-org:service:AVTransport:1">
+          <InstanceID>0</InstanceID>
+          <Speed>1</Speed>
+        </u:Play>
+      </s:Body>
+    </s:Envelope>
+    ' \
+        -H 'Content-Type: text/xml' \
+        -H 'SOAPACTION: urn:schemas-upnp-org:service:AVTransport:1#Play' \
+        http://${SONOS_IP}:1400/MediaRenderer/AVTransport/Control | \
+    xmllint -format -
+    status_on
+}
+
+function sonos_stop() {
+    curl \
+        -sS \
+        -X POST \
+        --data-raw '
+    <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
+      <s:Body>
+        <u:Stop xmlns:u="urn:schemas-upnp-org:service:AVTransport:1">
+          <InstanceID>0</InstanceID>
+          <Speed>1</Speed>
+        </u:Stop>
+      </s:Body>
+    </s:Envelope>
+    ' \
+        -H 'Content-Type: text/xml' \
+        -H 'SOAPACTION: urn:schemas-upnp-org:service:AVTransport:1#Stop' \
+        http://${SONOS_IP}:1400/MediaRenderer/AVTransport/Control | \
+    xmllint -format -
+    status_on
+}
+
+function sonos_volume() {
+    if [ $# -lt 2 ]; then
+        echo "must supply <up|down|status>"
+        echo "  to raise, lower, or query for the status of the volume"
+        exit
+    fi
+
+    SONOS_VOLUME_AMOUNT=4
+    if [ $# -eq 3 ]; then
+        SONOS_VOLUME_AMOUNT=$3
+    fi
+
+    if [ $2 == "up" ] || [ $2 == "raise" ]; then
+        curl \
+            -sS \
+            -X POST \
+            --data-raw "
+        <s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"> \
+          <s:Body> \
+            <u:SetRelativeVolume xmlns:u=\"urn:schemas-upnp-org:service:RenderingControl:1\"> \
+              <InstanceID>0</InstanceID> \
+              <Channel>Master</Channel> \
+              <Adjustment>${SONOS_VOLUME_AMOUNT}</Adjustment> \
+            </u:SetRelativeVolume> \
+          </s:Body> \
+        </s:Envelope> \
+        " \
+            -H 'Content-Type: text/xml' \
+            -H 'SOAPACTION: urn:schemas-upnp-org:service:RenderingControl:1#SetRelativeVolume' \
+            http://${SONOS_IP}:1400/MediaRenderer/RenderingControl/Control | \
+        xmllint -format -
+        pkill -SIGRTMIN+4 i3status-rs
+
+        status_on
+
+    elif [ $2 == "down" ] || [ $2 == "lower" ]; then
+        curl \
+            -sS \
+            -X POST \
+            --data-raw "
+        <s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"> \
+          <s:Body> \
+            <u:SetRelativeVolume xmlns:u=\"urn:schemas-upnp-org:service:RenderingControl:1\"> \
+              <InstanceID>0</InstanceID> \
+              <Channel>Master</Channel> \
+              <Adjustment>-${SONOS_VOLUME_AMOUNT}</Adjustment> \
+            </u:SetRelativeVolume> \
+          </s:Body> \
+        </s:Envelope> \
+        " \
+            -H 'Content-Type: text/xml' \
+            -H 'SOAPACTION: urn:schemas-upnp-org:service:RenderingControl:1#SetRelativeVolume' \
+            http://${SONOS_IP}:1400/MediaRenderer/RenderingControl/Control | \
+        xmllint -format -
+        pkill -SIGRTMIN+4 i3status-rs
+
+        status_on
+
+    elif [ $2 == "status" ]; then
+        curl \
+            -sS \
+            -X POST \
+            --data-raw "
+        <s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"> \
+          <s:Body> \
+            <u:SetRelativeVolume xmlns:u=\"urn:schemas-upnp-org:service:RenderingControl:1\"> \
+              <InstanceID>0</InstanceID> \
+              <Channel>Master</Channel> \
+              <Adjustment>0</Adjustment> \
+            </u:SetRelativeVolume> \
+          </s:Body> \
+        </s:Envelope> \
+        " \
+            -H 'Content-Type: text/xml' \
+            -H 'SOAPACTION: urn:schemas-upnp-org:service:RenderingControl:1#SetRelativeVolume' \
+            http://${SONOS_IP}:1400/MediaRenderer/RenderingControl/Control | \
+        xmllint -format -
+
+        status_on
+
+    elif [ $2 == "simplestatus" ]; then
+        if [ $(status_query) == "true" ]; then
+            set +e
+            PARSED_VOLUME=$(curl \
+                -sS \
+                -X POST \
+                --data-raw "
+            <s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"> \
+              <s:Body> \
+                <u:SetRelativeVolume xmlns:u=\"urn:schemas-upnp-org:service:RenderingControl:1\"> \
+                  <InstanceID>0</InstanceID> \
+                  <Channel>Master</Channel> \
+                  <Adjustment>0</Adjustment> \
+                </u:SetRelativeVolume> \
+              </s:Body> \
+            </s:Envelope> \
+            " \
+                -H 'Content-Type: text/xml' \
+                -H 'SOAPACTION: urn:schemas-upnp-org:service:RenderingControl:1#SetRelativeVolume' \
+                http://${SONOS_IP}:1400/MediaRenderer/RenderingControl/Control | \
+            xmllint --xpath '//NewVolume/text()' -)
+            if [ $? == 0 ]; then
+                echo -n ${PARSED_VOLUME}
+            else
+                status_off
+                echo -n "X"
+            fi
+        else
+            echo -n "X"
+        fi
+
+    else
+        echo "must supply <up|down|simplestatus|status>"
+        echo "  to raise, lower, or query for the status of the volume"
+        exit
+    fi
+}
+
+function sonos_list_devices() {
+    jq -r ".known | keys" ~/.config/sonosctl/config.json
+}
+
+function sonos_select_device() {
+    if [ $# -lt 2 ]; then
+        echo "must supply <product-name>"
+        echo "  to select as the current device"
+        exit
+    fi
+
+    PRODUCT_NAME=$2
+    if [ ${PRODUCT_NAME} == "-" ]; then
+        PRODUCT_NAME=$(jq -r '.last_used.name' ~/.config/sonosctl/config.json)
+    fi
+
+    LAST_USED=$(jq -r '.current.name' ~/.config/sonosctl/config.json)
+
+    cat ~/.config/sonosctl/config.json | jq ".current.name |= \"${PRODUCT_NAME}\"" > ~/.config/sonosctl/config.json.new
+    mv ~/.config/sonosctl/config.json.new ~/.config/sonosctl/config.json
+
+    if [ $LAST_USED != $PRODUCT_NAME ]; then
+        cat ~/.config/sonosctl/config.json | jq ".last_used.name |= \"${LAST_USED}\"" > ~/.config/sonosctl/config.json.new
+        mv ~/.config/sonosctl/config.json.new ~/.config/sonosctl/config.json
+    fi
+
+    pkill -SIGRTMIN+4 i3status-rs
+
+    echo "($(jq ".last_used.name" ~/.config/sonosctl/config.json))"
+    jq ".current.name" ~/.config/sonosctl/config.json
+}
+
+
+function sonos_current_device() {
+    jq ".current.name" ~/.config/sonosctl/config.json
+}
+
+function sonos_disconnect() {
+    status_off
+}
+
+if [ ${COMMAND} == "linein" ]; then
+    sonos_linein
+
+elif [ ${COMMAND} == "play" ] || [ ${COMMAND} == "start" ]; then
+    sonos_play
+
+elif [ ${COMMAND} == "on" ]; then
+    sonos_linein
+    sonos_play
+
+elif [ ${COMMAND} == "stop" ] || [ ${COMMAND} == "off" ]; then
+    sonos_stop
+
+elif [ ${COMMAND} == "volume" ]; then
+    sonos_volume $@
+
+elif [ ${COMMAND} == "list" ] || [ ${COMMAND} == "list-devices" ]; then
+    sonos_list_devices
+
+elif [ ${COMMAND} == "current" ] || [ ${COMMAND} == "current-devices" ]; then
+    sonos_current_device
+
+elif [ ${COMMAND} == "select" ] || [ ${COMMAND} == "select-device" ]; then
+    sonos_select_device $@
+
+elif [ ${COMMAND} == "disconnect" ]; then
+    sonos_disconnect
+
+elif [ ${COMMAND} == "config" ]; then
+    sonos_print_config
+
+elif [ ${COMMAND} == "help" ] || [ ${COMMAND} == "-h" ] || [ ${COMMAND} == "--help" ]; then
+    display_help
+    exit
+else
+    display_help
+    exit
+fi
