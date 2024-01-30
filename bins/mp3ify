@@ -1,0 +1,36 @@
+#!/bin/bash
+
+if [ $# -ne 4 ]; then
+    echo "must supply <full path> <full path without extension> <full path without file> <target dir>"
+    exit
+fi
+
+FULLPATH="${1}"
+FULLPATHSANSEXT="${2}"
+FULLPATHSANSFILE="${3}"
+PARENTDIR="${4}"
+
+FILEEXT=$(extension "${FULLPATH}")
+
+
+if [ "${FILEEXT}" == ".flac" ]; then
+    set -e
+    set -x
+    mkdir -p "${PARENTDIR}${FULLPATHSANSFILE}"
+    echo n | ffmpeg -i "${FULLPATH}" -qscale:a 0 "${PARENTDIR}${FULLPATHSANSEXT}.mp3"
+elif [ "${FILEEXT}" == ".mp3" ] || \
+     [ "${FILEEXT}" == ".m4a" ] || \
+     [ "${FILEEXT}" == ".jpg" ] || \
+     [ "${FILEEXT}" == ".png" ] || \
+     [ "${FILEEXT}" == ".rtf" ] || \
+     [ "${FILEEXT}" == ".gif" ] || \
+     [ "${FILEEXT}" == ".txt" ] || \
+     [ "${FILEEXT}" == ".pdf" ] || \
+     [ "${FILEEXT}" == ".PDF" ]; then
+    set -e
+    set -x
+    mkdir -p "${PARENTDIR}${FULLPATHSANSFILE}"
+    cp -u "${FULLPATH}" "${PARENTDIR}${FULLPATHSANSFILE}"
+else
+    echo not operating on ${FULLPATH} with ${FILEEXT} which is not .flac nor .mp3
+fi
