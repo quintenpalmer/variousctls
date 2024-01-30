@@ -1,0 +1,188 @@
+#!/bin/bash
+
+set -e
+#set -x
+
+display_help() {
+    echo "usage:"
+    echo "  wifictl new <ssid>"
+    echo "  wifictl new_public <ssid>"
+    echo "  wifictl select <ssid>"
+    echo "  wifictl list"
+    echo "  wifictl current"
+    echo "  wifictl on"
+    echo "  wifictl off"
+    echo "  wifictl status"
+    echo "  wifictl help"
+}
+
+if [ $# -lt 1 ]; then
+    display_help
+    exit
+fi
+
+COMMAND=$1
+shift
+ARG=$@
+#echo $ARG
+
+if [ ${COMMAND} == "new" ]; then
+    if [ $# -lt 1 ]; then
+        display_help
+        echo ""
+        echo "must supply <SSID>"
+        echo "  as the new SSID to add"
+        exit
+    fi
+
+    echo "enter PSK"
+    CAPTURED_OUTPUT=$(wpa_passphrase "${ARG}")
+
+    NEW_SSID=$(echo ${CAPTURED_OUTPUT} | sed -rn "s/.*ssid=\"(.*)\" #.*/\1/p")
+    NEW_RAW_PW=$(echo ${CAPTURED_OUTPUT} | sed -rn "s/.*#psk=\"(.*)\" psk.*/\1/p")
+    NEW_PSK=$(echo ${CAPTURED_OUTPUT} | sed -rn "s/.*psk=(.*) }.*/\1/p")
+
+    POTENTIALLY_EXISTING_SSID=$(jq ".known | .[] | select(.ssid == \"${NEW_SSID}\") | .ssid" ~/.config/wifictl/config.json)
+    if [ $POTENTIALLY_EXISTING_SSID ]; then
+        echo "SSID ${NEW_SSID} already registered"
+        exit
+    fi
+
+    BAK="$HOME/.config/wifictl/config-$(date +"%Y_%d_%m_%H_%M_%S").json"
+
+    mv ~/.config/wifictl/config.json $BAK
+
+    jq ".known += [{\"ssid\": \"${NEW_SSID}\", \"raw_pw\": \"${NEW_RAW_PW}\", \"psk\": \"${NEW_PSK}\"}]" $BAK > ~/.config/wifictl/config.json
+    echo "added \"${NEW_SSID}\""
+
+elif [ ${COMMAND} == "new_public" ]; then
+    if [ $# -lt 1 ]; then
+        display_help
+        echo ""
+        echo "must supply <SSID>"
+        echo "  as the new SSID to add"
+        exit
+    fi
+
+    NEW_SSID="${ARG}"
+
+    POTENTIALLY_EXISTING_SSID=$(jq ".known_public | .[] | select(.ssid == \"${NEW_SSID}\") | .ssid" ~/.config/wifictl/config.json)
+    if [ $POTENTIALLY_EXISTING_SSID ]; then
+        echo "SSID ${NEW_SSID} already registered"
+        exit
+    fi
+
+    BAK="$HOME/.config/wifictl/config-$(date +"%Y_%d_%m_%H_%M_%S").json"
+
+    mv ~/.config/wifictl/config.json $BAK
+
+    jq ".known_public += [{\"ssid\": \"${NEW_SSID}\"}]" $BAK > ~/.config/wifictl/config.json
+    echo "added \"${NEW_SSID}\""
+
+elif [ ${COMMAND} == "select" ]; then
+    if [ $# -lt 1 ]; then
+        display_help
+        echo ""
+        echo "must supply <SSID>"
+        echo "  as the SSID to select (can view known with \`list\`)"
+        exit
+    fi
+
+    POTENTIALLY_FOUND_SECURED_SSID=$(jq ".known | .[] | select(.ssid == \"${ARG}\") | .ssid" ~/.config/wifictl/config.json)
+    if [ "$POTENTIALLY_FOUND_SECURED_SSID" ]; then
+        SSID=$(jq ".known | .[] | select(.ssid == \"${ARG}\") | .ssid" ~/.config/wifictl/config.json)
+        PSK=$(jq ".known | .[] | select(.ssid == \"${ARG}\") | .psk" ~/.config/wifictl/config.json)
+        FILE_SUFFIX=$(jq -r ".network_name" ~/.config/wifictl/config.json)
+        WPA_SUPPLICANT_FILENAME="/etc/wpa_supplicant/wpa_supplicant-${FILE_SUFFIX}.conf"
+        # CONTEXTNOTE1
+        # We used to need to elevate permissions to write to this file, so we would
+        # `doas sh -c " echo \"...\" > $filename"`
+        # but we don't need to anymore, but i'm still going to keep the `sh -c ...`
+        # in case we want to make this parameterizable over "needs elevated perms to write file" in the future
+        # doas \
+        sh -c " \
+        echo \"network={
+    ssid=\\\"${SSID}\\\"
+    psk=${PSK}
+}\" > ${WPA_SUPPLICANT_FILENAME} \
+        "
+        echo "selected secured \"${SSID}\""
+    else
+
+        POTENTIALLY_FOUND_SECURED_SSID=$(jq ".known_public | .[] | select(.ssid == \"${ARG}\") | .ssid" ~/.config/wifictl/config.json)
+        if [ $POTENTIALLY_FOUND_SECURED_SSID ]; then
+            SSID=$(jq ".known_public | .[] | select(.ssid == \"${ARG}\") | .ssid" ~/.config/wifictl/config.json)
+            FILE_SUFFIX=$(jq -r ".network_name" ~/.config/wifictl/config.json)
+            WPA_SUPPLICANT_FILENAME="/etc/wpa_supplicant/wpa_supplicant-${FILE_SUFFIX}.conf"
+            # See CONTEXTNOTE1 above
+            #doas \
+            sh -c " \
+            echo \"network={
+    ssid=\\\"${SSID}\\\"
+    key_mgmt=NONE
+}\" > ${WPA_SUPPLICANT_FILENAME} \
+            "
+            echo "selected public \"${SSID}\""
+        else
+            echo "Could not find SSID"
+        fi
+
+    fi
+
+elif [ ${COMMAND} == "current" ]; then
+    FILE_SUFFIX=$(jq -r ".network_name" ~/.config/wifictl/config.json)
+    WPA_SUPPLICANT_FILENAME="/etc/wpa_supplicant/wpa_supplicant-${FILE_SUFFIX}.conf"
+    sed -rn "s/.*ssid=\"(.*)\".*/\1/p" ${WPA_SUPPLICANT_FILENAME}
+
+elif [ ${COMMAND} == "list" ]; then
+    echo "Secured:"
+    echo ""
+    jq -r ".known | .[] | .ssid" ~/.config/wifictl/config.json
+    echo ""
+    echo ""
+    echo "Public:"
+    echo ""
+    jq -r ".known_public | .[] | .ssid" ~/.config/wifictl/config.json
+
+elif [ ${COMMAND} == "on" ] || [ ${COMMAND} == "start" ]; then
+    FILE_SUFFIX=$(jq -r ".network_name" ~/.config/wifictl/config.json)
+    WPA_SUPPLICANT_FILENAME="/etc/wpa_supplicant/wpa_supplicant-${FILE_SUFFIX}.conf"
+    SSID=$(sed -rn "s/.*ssid=\"(.*)\".*/\1/p" ${WPA_SUPPLICANT_FILENAME})
+
+    set -x
+
+    doas rfkill unblock wlan
+
+    doas systemctl start wpa_supplicant@${FILE_SUFFIX}
+
+    set +x
+    echo "wifi turned on with \"${SSID}\""
+
+elif [ ${COMMAND} == "off" ] || [ ${COMMAND} == "stop" ]; then
+    FILE_SUFFIX=$(jq -r ".network_name" ~/.config/wifictl/config.json)
+
+    set -x
+
+    doas systemctl stop wpa_supplicant@${FILE_SUFFIX}
+
+    doas rfkill block wlan
+
+    set +x
+    echo "wifi turned off"
+
+elif [ ${COMMAND} == "status" ]; then
+    FILE_SUFFIX=$(jq -r ".network_name" ~/.config/wifictl/config.json)
+
+    WPA_SUPPLICANT_FILENAME="/etc/wpa_supplicant/wpa_supplicant-${FILE_SUFFIX}.conf"
+    sed -rn "s/.*ssid=\"(.*)\".*/\1/p" ${WPA_SUPPLICANT_FILENAME}
+
+    systemctl status wpa_supplicant@${FILE_SUFFIX} | rg Active
+    rfkill | rg wlan
+
+elif [ ${COMMAND} == "help" ] || [ ${COMMAND} == "-h" ] || [ ${COMMAND} == "--help" ]; then
+    display_help
+    exit
+else
+    display_help
+    exit
+fi
