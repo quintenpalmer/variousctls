@@ -99,6 +99,11 @@ elif [ ${COMMAND} == "select" ]; then
         # `doas sh -c " echo \"...\" > $filename"`
         # but we don't need to anymore, but i'm still going to keep the `sh -c ...`
         # in case we want to make this parameterizable over "needs elevated perms to write file" in the future
+
+        # The reason we don't need elevated permissions is that we set these permissions:
+        # /etc/wpa_supplicant/ is readable and executable by everyone
+        # /etc/wpa_supplicant/wpa_supplicant-${DEVICE}.conf is readable and writable by everyone
+
         # doas \
         sh -c " \
         echo \"network={
