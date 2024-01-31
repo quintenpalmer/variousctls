@@ -1,5 +1,12 @@
 #!/bin/bash
 
+if [ $# -lt 2 ] ; then
+    echo 'must supply <SKIP-COUNT> <CMD> <CMD-ARGS>'
+    echo '    <SKIP-COUNT> is how many lines to skip as "headers"'
+    echo '    <CMD> is the command you want to run'
+    echo '    <CMD-ARGS> are the arguments to pass to the command'
+fi
+
 # Capture entire command passed as command line arguments to this script
 COUNTER=$1
 shift
