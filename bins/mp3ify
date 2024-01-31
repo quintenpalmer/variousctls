@@ -12,15 +12,47 @@ PARENTDIR="${4}"
 
 FILEEXT=$(extension "${FULLPATH}")
 
+echo "-----------------"
+echo "extension is"
+echo ${FILEEXT}
+echo "-----------------"
 
 if [ "${FILEEXT}" == ".flac" ]; then
     set -e
     set -x
     mkdir -p "${PARENTDIR}${FULLPATHSANSFILE}"
-    echo n | ffmpeg -i "${FULLPATH}" -qscale:a 0 "${PARENTDIR}${FULLPATHSANSEXT}.mp3"
+
+    ORIGDISC=$(dirname "${FULLPATH}")
+    NEWDISC="${PARENTDIR}${FULLPATHSANSFILE}"
+    touch --reference="${ORIGDISC}" "${NEWDISC}"
+
+    ORIGARTIST=$(dirname "${ORIGDISC}")
+    NEWARTIST=$(dirname "${NEWDISC}")
+    touch --reference="${ORIGARTIST}" "${NEWARTIST}"
+
+    ORIGMAYBEDISCPARENT=$(dirname "${ORIGARTIST}")
+    NEWMAYBEDISCPARENT=$(dirname "${NEWARTIST}")
+    if [ ${ORIGMAYBEDISCPARENT} = "." ]; then
+        echo "was single disc and not copying"
+    else
+        touch --reference="${ORIGMAYBEDISCPARENT}" "${NEWMAYBEDISCPARENT}"
+    fi
+
+
+    NEWFILE="${PARENTDIR}${FULLPATHSANSEXT}.mp3"
+
+    echo n | ffmpeg -i "${FULLPATH}" -qscale:a 0 "${NEWFILE}"
+
+    DID_COPY=$(echo $?)
+
+    if [ ${DID_COPY} -eq 0 ] ; then
+        touch --reference="${FULLPATH}" "${NEWFILE}"
+    fi
+
 elif [ "${FILEEXT}" == ".mp3" ] || \
      [ "${FILEEXT}" == ".m4a" ] || \
      [ "${FILEEXT}" == ".jpg" ] || \
+     [ "${FILEEXT}" == ".webp" ] || \
      [ "${FILEEXT}" == ".png" ] || \
      [ "${FILEEXT}" == ".rtf" ] || \
      [ "${FILEEXT}" == ".gif" ] || \
@@ -30,7 +62,26 @@ elif [ "${FILEEXT}" == ".mp3" ] || \
     set -e
     set -x
     mkdir -p "${PARENTDIR}${FULLPATHSANSFILE}"
-    cp -u "${FULLPATH}" "${PARENTDIR}${FULLPATHSANSFILE}"
+
+    ORIGDISC=$(dirname "${FULLPATH}")
+    NEWDISC="${PARENTDIR}${FULLPATHSANSFILE}"
+    touch --reference="${ORIGDISC}" "${NEWDISC}"
+
+    ORIGARTIST=$(dirname "${ORIGDISC}")
+    NEWARTIST=$(dirname "${NEWDISC}")
+    touch --reference="${ORIGARTIST}" "${NEWARTIST}"
+
+    ORIGMAYBEDISCPARENT=$(dirname "${ORIGARTIST}")
+    NEWMAYBEDISCPARENT=$(dirname "${NEWARTIST}")
+    if [ ${ORIGMAYBEDISCPARENT} = "." ]; then
+        echo "was single disc and not copying"
+    else
+        touch --reference="${ORIGMAYBEDISCPARENT}" "${NEWMAYBEDISCPARENT}"
+    fi
+
+    cp --preserve=all -u "${FULLPATH}" "${PARENTDIR}${FULLPATHSANSFILE}"
+
+
 else
     echo not operating on ${FULLPATH} with ${FILEEXT} which is not .flac nor .mp3
 fi
