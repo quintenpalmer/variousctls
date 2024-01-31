@@ -16,7 +16,7 @@ display_help() {
 function system_volume() {
     OPERATION=$1
 
-    CURRENT_VOLUME=$(wpctl get-volume @DEFAULT_SINK@ | cut -d ':' -f 2 | cut -d '.' -f 2)
+    CURRENT_VOLUME=$(wpctl get-volume @DEFAULT_SINK@ | cut -d ':' -f 2 | python -c 'import sys; print(int(float(sys.stdin.read()) * 100))')
 
     CONFIG_FILE=~/.config/volumectl/config
 
@@ -49,7 +49,7 @@ function app_volume() {
 
         CLIENT_ID=$(pw-dump | jq ".[] | select(.type == \"PipeWire:Interface:Node\") | select(.info.props.\"application.name\" != null) | select(.info.props.\"application.name\" | contains(\"${APP_NAME}\")) | .id")
 
-        CURRENT_VOLUME=$(wpctl get-volume ${CLIENT_ID} | cut -d ':' -f 2 | cut -d '.' -f 2)
+        CURRENT_VOLUME=$(wpctl get-volume ${CLIENT_ID} | cut -d ':' -f 2 | python -c 'import sys; print(int(float(sys.stdin.read()) * 100))')
 
         echo "${CURRENT_VOLUME}%"
 
