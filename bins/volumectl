@@ -46,14 +46,12 @@ function app_volume() {
     fi
 
     if [ $DIRECTION == "get" ]; then
-        echo $(pactl list sink-inputs \
-            | while read -r line; do \
-                echo $line \
-                | grep -oP 'application.name = "\K[^"]+' ; echo -n $line \
-                | grep -oP 'Volume: front-left: [0-9]+ /[ ]+\K[0-9]+%' ; done \
-            | paste - - \
-            | rg $APP_NAME \
-            | cut -d $'\t' -f 1)
+
+        CLIENT_ID=$(pw-dump | jq ".[] | select(.type == \"PipeWire:Interface:Node\") | select(.info.props.\"application.name\" != null) | select(.info.props.\"application.name\" | contains(\"${APP_NAME}\")) | .id")
+
+        CURRENT_VOLUME=$(wpctl get-volume ${CLIENT_ID} | cut -d ':' -f 2 | cut -d '.' -f 2)
+
+        echo "${CURRENT_VOLUME}%"
 
         exit
 
