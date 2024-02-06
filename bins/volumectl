@@ -24,7 +24,7 @@ function system_volume() {
         CONFIG_FILE=$2
     fi
 
-    VOLUME_TO_SET=$(stepper f32 $OPERATION $CURRENT_VOLUME $CONFIG_FILE)
+    VOLUME_TO_SET=$(stepper u32 $OPERATION $CURRENT_VOLUME $CONFIG_FILE)
 
     wpctl set-volume @DEFAULT_SINK@ "${VOLUME_TO_SET}%"
 }
