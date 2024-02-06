@@ -20,7 +20,7 @@ function move_brightness() {
         CONFIG_FILE=$2
     fi
 
-    BRIGHTNESS_TO_SET=$(stepper $OPERATION $CURRENT_BRIGHTNESS $CONFIG_FILE)
+    BRIGHTNESS_TO_SET=$(stepper f32 $OPERATION $CURRENT_BRIGHTNESS $CONFIG_FILE)
 
     xbacklight -set "${BRIGHTNESS_TO_SET}"
 }

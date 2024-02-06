@@ -25,7 +25,7 @@ if [ $OPERATION != "get" ] && [ $OPERATION != "get-simple" ]; then
             CONFIG_FILE=$3
         fi
 
-        SCALE_TO_SET=$(stepper $OPERATION $CURRENT_SCALE $CONFIG_FILE)
+        SCALE_TO_SET=$(stepper f32 $OPERATION $CURRENT_SCALE $CONFIG_FILE)
     fi
 
     swaymsg output ${DISPLAY} scale $SCALE_TO_SET
