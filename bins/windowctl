@@ -39,7 +39,7 @@ main() {
     if [ $1 == "fit-to-width" ]; then
         fit_to_width
     elif [ $1 == "fit-to-height" ]; then
-        fit_to_width
+        fit_to_height
     elif [ $1 == "resize-to-original" ]; then
         resize_to_original
     else
