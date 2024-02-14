@@ -3,12 +3,18 @@
 display_help() {
     echo "usage:"
     echo "  windowctl fit-to-width"
+    echo "  windowctl fit-to-height"
     echo "  windowctl resize-to-original"
     echo "  windowctl help"
 }
 
 fit_to_width() {
     swaymsg resize set width 100ppt
+    swaymsg move position center
+}
+
+fit_to_height() {
+    swaymsg resize set height 100ppt
     swaymsg move position center
 }
 
@@ -31,6 +37,8 @@ main() {
     fi
 
     if [ $1 == "fit-to-width" ]; then
+        fit_to_width
+    elif [ $1 == "fit-to-height" ]; then
         fit_to_width
     elif [ $1 == "resize-to-original" ]; then
         resize_to_original
