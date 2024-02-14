@@ -3,7 +3,10 @@
 TREE=$(swaymsg -t get_tree)
 #echo ${TREE}
 
-ACTIVE_WINDOW=$(echo ${TREE} | jq 'recurse(.nodes[]) | select(.focused == true)')
+# old copy-paste from github
+#ACTIVE_WINDOW=$(echo ${TREE} | jq 'recurse(.nodes[]) | select(.focused == true)')
+# new copy-paste from my screenshot tool
+ACTIVE_WINDOW=$(echo ${TREE} | jq -j '.. | select(.type?) | select(.focused)')
 echo "active window:"
 echo ${ACTIVE_WINDOW}
 
