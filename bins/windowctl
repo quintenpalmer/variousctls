@@ -1,0 +1,42 @@
+#!/bin/bash
+
+display_help() {
+    echo "usage:"
+    echo "  windowctl fit-to-width"
+    echo "  windowctl resize-to-original"
+    echo "  windowctl help"
+}
+
+fit_to_width() {
+    swaymsg resize set width 100ppt
+    swaymsg move position center
+}
+
+resize_to_original() {
+    TREE_JSON=$(swaymsg -t get_tree)
+
+    ACTIVE_WINDOW_JSON=$(echo ${TREE_JSON} | jq -j '.. | select(.type?) | select(.focused)')
+
+    NEW_WIDTH=$(echo ${ACTIVE_WINDOW_JSON} | jq '.geometry.width')
+    NEW_HEIGHT=$(echo ${ACTIVE_WINDOW_JSON} | jq '.geometry.height')
+
+    swaymsg resize set width "${NEW_WIDTH} px" height "${NEW_HEIGHT} px"
+    swaymsg move position center
+}
+
+main() {
+    if [ $# -lt 1 ]; then
+        display_help
+        exit
+    fi
+
+    if [ $1 == "fit-to-width" ]; then
+        fit_to_width
+    elif [ $1 == "resize-to-original" ]; then
+        resize_to_original
+    else
+        display_help
+    fi
+}
+
+main $@
