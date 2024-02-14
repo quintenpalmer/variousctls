@@ -1,32 +1,40 @@
 #!/bin/bash
 
 TREE=$(swaymsg -t get_tree)
-echo ${TREE}
+#echo ${TREE}
 
 ACTIVE_WINDOW=$(echo ${TREE} | jq 'recurse(.nodes[]) | select(.focused == true)')
+echo "active window:"
 echo ${ACTIVE_WINDOW}
 
 ACTIVE_WINDOW_APP_ID=$(echo ${ACTIVE_WINDOW} | jq '.app_id')
+echo "active window app id:"
 echo ${ACTIVE_WINDOW_APP_ID}
 
 if [[ "${ACTIVE_WINDOW_APP_ID}" == '"Alacritty"' ]]; then
     PARENT_PID=$(echo ${ACTIVE_WINDOW} | jq '.pid')
+    echo "parent pid:"
     echo ${PARENT_PID}
 
     CHILD_PID=$(pgrep -P ${PARENT_PID})
+    echo "child pid:"
     echo ${CHILD_PID}
 
     if [[ ${CHILD_PID} != "" ]]; then
         DIRTY_CHILD_CWD=$(pwdx ${CHILD_PID} | cut -d : -f 2)
+        echo "dirty child pid:"
         echo ${DIRTY_CHILD_CWD}
 
         CLEAN_CHILD_CWD=$(echo ${DIRTY_CHILD_CWD} | xargs)
+        echo "clean child pid:"
         echo ${CLEAN_CHILD_CWD}
 
         alacritty --working-directory "${CLEAN_CHILD_CWD}"
     else
+        echo "no child pid"
         alacritty
     fi
 else
+    echo "no active window app id"
     alacritty
 fi
