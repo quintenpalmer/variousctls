@@ -1,0 +1,80 @@
+#!/bin/bash
+
+set -e
+#set -x
+
+usage() {
+    echo "Usage: screenctl <display> <aspect> <command>"
+    echo "    <display> the name of the screen to operate on"
+    echo "    <aspect> one of \"scale\" or \"refresh\""
+    echo "    <command> one of:"
+    echo "        get"
+    echo "        get-simple"
+    echo "        select"
+    echo "        first"
+    echo "        down"
+    echo "        up"
+    echo "        last"
+}
+
+main() {
+    if [ $# -lt 3 ]; then
+        usage
+        exit
+    fi
+
+    DISPLAY=$1
+    shift
+    ASPECT=$1
+    shift
+    OPERATION=$1
+    shift
+
+    if [ ${ASPECT} == "scale" ]; then
+        change_scale ${DISPLAY} ${OPERATION} $@
+    else
+        usage
+        exit
+    fi
+
+}
+
+change_scale() {
+    DISPLAY=$1
+    OPERATION=$2
+
+    CURRENT_SCALE=$(swaymsg -t get_outputs | jq ".[] | select(.name == \"${DISPLAY}\") | .scale")
+
+    if [ $OPERATION != "get" ] && [ $OPERATION != "get-simple" ]; then
+
+        if [ $OPERATION == "select" ]; then
+            SCALE_TO_SET=$3
+        else
+            CONFIG_FILE=~/.config/screenctl/scales/config
+
+            if [ $# -eq 3 ]; then
+                CONFIG_FILE=$3
+            fi
+
+            SCALE_TO_SET=$(stepper f32 $OPERATION $CURRENT_SCALE $CONFIG_FILE)
+        fi
+
+        swaymsg output ${DISPLAY} scale $SCALE_TO_SET
+
+        pkill -SIGRTMIN+2 i3status-rs
+    fi
+
+    CURRENT_SWAY_OUTPUT=$(swaymsg -t get_outputs | jq ".[] | select(.name == \"${DISPLAY}\")")
+    CURRENT_SCALE=$(echo $CURRENT_SWAY_OUTPUT | jq '.scale')
+
+    CURRENT_X=$(echo $CURRENT_SWAY_OUTPUT | jq '.rect.width')
+    CURRENT_Y=$(echo $CURRENT_SWAY_OUTPUT | jq '.rect.height')
+
+    if [ $OPERATION == "get-simple" ]; then
+        echo "${CURRENT_X}x${CURRENT_Y}"
+    else
+        echo "${CURRENT_X}x${CURRENT_Y} ($(printf "%.4f" ${CURRENT_SCALE}))"
+    fi
+}
+
+main $@
