@@ -5,6 +5,7 @@ display_help() {
     echo "  windowctl fit-to-width"
     echo "  windowctl fit-to-height"
     echo "  windowctl resize-to-original"
+    echo "  windowctl toggle-sticky"
     echo "  windowctl help"
 }
 
@@ -16,6 +17,10 @@ fit_to_width() {
 fit_to_height() {
     swaymsg resize set height 100ppt
     swaymsg move position center
+}
+
+toggle_sticky() {
+    swaymsg sticky toggle
 }
 
 resize_to_original() {
@@ -40,6 +45,8 @@ main() {
         fit_to_width
     elif [ $1 == "fit-to-height" ]; then
         fit_to_height
+    elif [ $1 == "toggle-sticky" ]; then
+        toggle_sticky
     elif [ $1 == "resize-to-original" ]; then
         resize_to_original
     else
