@@ -66,7 +66,8 @@ change_refresh() {
         fi
 
         REFRESH_INT_TO_SET=$(echo $((${REFRESH_TO_SET} / 1000)))
-        REFRESH_REM_TO_SET=$(echo $((${REFRESH_TO_SET} % 1000)))
+        REFRESH_REM_TO_SET_NO_LEADING_ZEROS=$(echo $((${REFRESH_TO_SET} % 1000)))
+        REFRESH_REM_TO_SET=$(echo ${REFRESH_REM_TO_SET_NO_LEADING_ZEROS} | python -c 'import sys; print("{:03d}".format(int(sys.stdin.read().strip())))')
 
         SWAY_MODE_TO_SET=$(echo "${CURRENT_WIDTH}x${CURRENT_HEIGHT}@${REFRESH_INT_TO_SET}.${REFRESH_REM_TO_SET}Hz")
 
@@ -79,7 +80,8 @@ change_refresh() {
     CURRENT_HEIGHT=$(echo ${CURRENT_MODE} | jq '.height')
     CURRENT_REFRESH_THOUSANDS=$(echo ${CURRENT_MODE} | jq '.refresh')
     CURRENT_REFRESH_INT=$(echo $((${CURRENT_REFRESH_THOUSANDS} / 1000)))
-    CURRENT_REFRESH_REM=$(echo $((${CURRENT_REFRESH_THOUSANDS} % 1000)))
+    CURRENT_REFRESH_REM_NO_LEADING_ZEROS=$(echo $((${CURRENT_REFRESH_THOUSANDS} % 1000)))
+    CURRENT_REFRESH_REM=$(echo ${CURRENT_REFRESH_REM_NO_LEADING_ZEROS} | python -c 'import sys; print("{:03d}".format(int(sys.stdin.read().strip())))')
 
     if [ $OPERATION == "get-simple" ]; then
         echo "${CURRENT_REFRESH_INT}.${CURRENT_REFRESH_REM}" | python -c 'import sys; print(round(float(sys.stdin.read().strip())))'
