@@ -32,11 +32,60 @@ main() {
 
     if [ ${ASPECT} == "scale" ]; then
         change_scale ${DISPLAY} ${OPERATION} $@
+    elif [ ${ASPECT} == "refresh" ]; then
+        change_refresh ${DISPLAY} ${OPERATION} $@
     else
         usage
         exit
     fi
 
+}
+
+change_refresh() {
+    DISPLAY=$1
+    OPERATION=$2
+
+    if [ $OPERATION != "get" ] && [ $OPERATION != "get-simple" ]; then
+        CURRENT_SWAY_OUTPUT=$(swaymsg -t get_outputs | jq ".[] | select(.name == \"${DISPLAY}\")")
+        CURRENT_MODE=$(echo ${CURRENT_SWAY_OUTPUT} | jq '.current_mode')
+        CURRENT_WIDTH=$(echo ${CURRENT_MODE} | jq '.width')
+        CURRENT_HEIGHT=$(echo ${CURRENT_MODE} | jq '.height')
+
+        CURRENT_REFRESH_THOUSANDS=$(echo ${CURRENT_MODE} | jq '.refresh')
+
+        if [ ${OPERATION} == "select" ]; then
+            REFRESH_TO_SET=$3
+        else
+            CONFIG_FILE=~/.config/screenctl/refresh/config
+
+            if [ $# -eq 3 ]; then
+                CONFIG_FILE=$3
+            fi
+
+            REFRESH_TO_SET=$(stepper f32 $OPERATION $CURRENT_REFRESH_THOUSANDS $CONFIG_FILE)
+        fi
+
+        REFRESH_INT_TO_SET=$(echo $((${REFRESH_TO_SET} / 1000)))
+        REFRESH_REM_TO_SET=$(echo $((${REFRESH_TO_SET} % 1000)))
+
+        SWAY_MODE_TO_SET=$(echo "${CURRENT_WIDTH}x${CURRENT_HEIGHT}@${REFRESH_INT_TO_SET}.${REFRESH_REM_TO_SET}Hz")
+
+        swaymsg output ${DISPLAY} mode ${SWAY_MODE_TO_SET}
+    fi
+
+    CURRENT_SWAY_OUTPUT=$(swaymsg -t get_outputs | jq ".[] | select(.name == \"${DISPLAY}\")")
+    CURRENT_MODE=$(echo ${CURRENT_SWAY_OUTPUT} | jq '.current_mode')
+    CURRENT_WIDTH=$(echo ${CURRENT_MODE} | jq '.width')
+    CURRENT_HEIGHT=$(echo ${CURRENT_MODE} | jq '.height')
+    CURRENT_REFRESH_THOUSANDS=$(echo ${CURRENT_MODE} | jq '.refresh')
+    CURRENT_REFRESH_INT=$(echo $((${CURRENT_REFRESH_THOUSANDS} / 1000)))
+    CURRENT_REFRESH_REM=$(echo $((${CURRENT_REFRESH_THOUSANDS} % 1000)))
+
+    if [ $OPERATION == "get-simple" ]; then
+        echo "${CURRENT_REFRESH_INT}.${CURRENT_REFRESH_REM}" | python -c 'import sys; print(round(float(sys.stdin.read().strip())))'
+    else
+        echo "${CURRENT_WIDTH}x${CURRENT_HEIGHT}@${CURRENT_REFRESH_INT}.${CURRENT_REFRESH_REM}Hz"
+    fi
 }
 
 change_scale() {
