@@ -72,6 +72,8 @@ change_refresh() {
         SWAY_MODE_TO_SET=$(echo "${CURRENT_WIDTH}x${CURRENT_HEIGHT}@${REFRESH_INT_TO_SET}.${REFRESH_REM_TO_SET}Hz")
 
         swaymsg output ${DISPLAY} mode ${SWAY_MODE_TO_SET}
+
+        pkill -SIGRTMIN+6 i3status-rs
     fi
 
     CURRENT_SWAY_OUTPUT=$(swaymsg -t get_outputs | jq ".[] | select(.name == \"${DISPLAY}\")")
