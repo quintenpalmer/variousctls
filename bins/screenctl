@@ -62,7 +62,7 @@ change_refresh() {
                 CONFIG_FILE=$3
             fi
 
-            REFRESH_TO_SET=$(stepper f32 $OPERATION $CURRENT_REFRESH_THOUSANDS $CONFIG_FILE)
+            REFRESH_TO_SET=$(stepper u32 $OPERATION $CURRENT_REFRESH_THOUSANDS $CONFIG_FILE)
         fi
 
         REFRESH_INT_TO_SET=$(echo $((${REFRESH_TO_SET} / 1000)))
