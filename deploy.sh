@@ -1,5 +1,5 @@
 #!/bin/bash
-#
+
 for file in $(ls bins/*); do
     TARGET_FILE=~/.bin/$(basename ${file})
     echo "${TARGET_FILE}:"
