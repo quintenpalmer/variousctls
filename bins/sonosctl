@@ -13,6 +13,7 @@ display_help() {
     echo "  sonosctl volume <up|down> <amount>"
     echo "  sonosctl volume status"
     echo "  sonosctl volume simplestatus"
+    echo "  sonosctl relvol <up>|<down> (<amount>)"
     echo "  sonosctl help"
 }
 
@@ -210,6 +211,70 @@ function sonos_volume() {
     fi
 }
 
+function relative_volume() {
+    if [ $# -lt 2 ]; then
+        echo "must supply <up|down|status>"
+        echo "  to raise, lower, or query for the status of the volume"
+        exit
+    fi
+
+    SONOS_VOLUME_AMOUNT=4
+    if [ $# -eq 3 ]; then
+        SONOS_VOLUME_AMOUNT=$3
+    fi
+
+    if [ $2 == "up" ] || [ $2 == "raise" ]; then
+        curl \
+            -sS \
+            -X POST \
+            --data-raw "
+        <s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"> \
+          <s:Body> \
+            <u:SetRelativeVolume xmlns:u=\"urn:schemas-upnp-org:service:RenderingControl:1\"> \
+              <InstanceID>0</InstanceID> \
+              <Channel>Master</Channel> \
+              <Adjustment>${SONOS_VOLUME_AMOUNT}</Adjustment> \
+            </u:SetRelativeVolume> \
+          </s:Body> \
+        </s:Envelope> \
+        " \
+            -H 'Content-Type: text/xml' \
+            -H 'SOAPACTION: urn:schemas-upnp-org:service:RenderingControl:1#SetRelativeVolume' \
+            http://${SONOS_IP}:1400/MediaRenderer/RenderingControl/Control | \
+        xmllint -format -
+        pkill -SIGRTMIN+4 i3status-rs
+
+        status_on
+
+    elif [ $2 == "down" ] || [ $2 == "lower" ]; then
+        curl \
+            -sS \
+            -X POST \
+            --data-raw "
+        <s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"> \
+          <s:Body> \
+            <u:SetRelativeVolume xmlns:u=\"urn:schemas-upnp-org:service:RenderingControl:1\"> \
+              <InstanceID>0</InstanceID> \
+              <Channel>Master</Channel> \
+              <Adjustment>-${SONOS_VOLUME_AMOUNT}</Adjustment> \
+            </u:SetRelativeVolume> \
+          </s:Body> \
+        </s:Envelope> \
+        " \
+            -H 'Content-Type: text/xml' \
+            -H 'SOAPACTION: urn:schemas-upnp-org:service:RenderingControl:1#SetRelativeVolume' \
+            http://${SONOS_IP}:1400/MediaRenderer/RenderingControl/Control | \
+        xmllint -format -
+        pkill -SIGRTMIN+4 i3status-rs
+
+        status_on
+    else
+        echo "must supply <up|down>"
+        echo "  to raise or lower volume"
+        exit
+    fi
+}
+
 function get_volume_integer() {
     echo $(curl \
         -sS \
@@ -287,6 +352,9 @@ elif [ ${COMMAND} == "stop" ] || [ ${COMMAND} == "off" ]; then
 
 elif [ ${COMMAND} == "volume" ]; then
     sonos_volume $@
+
+elif [ ${COMMAND} == "relvol" ]; then
+    relative_volume $@
 
 elif [ ${COMMAND} == "list" ] || [ ${COMMAND} == "list-devices" ]; then
     sonos_list_devices
