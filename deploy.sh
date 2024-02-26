@@ -3,7 +3,7 @@
 function main(){
     for file in $(ls bins/*); do
         TARGET_FILE=~/.bin/$(basename ${file})
-        echo -e " $(basename ${file}) \t(${TARGET_FILE})"
+        echo -e " $(padded_right $(basename ${file})) (${TARGET_FILE})"
         if [ -f "${TARGET_FILE}" ]; then
             colordiff -w -u ~/.bin/$(basename ${file}) ${file}
             if [ $? -eq 0 ]; then
@@ -19,6 +19,12 @@ function main(){
             cp -i ${file} ~/.bin
         fi
     done
+}
+
+function padded_right() {
+    TOPRINT=$1
+    SPACE="\t"
+    echo -e "${TOPRINT}:${SPACE}"
 }
 
 main $@
