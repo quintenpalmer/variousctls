@@ -1,9 +1,17 @@
 #!/bin/bash
 
 function main(){
+    LONGEST=1
+    for file in $(ls bins/*); do
+        BASEFILE=$(basename ${file})
+        if [ "${#BASEFILE}" -gt "${LONGEST}" ]; then
+            LONGEST=${#BASEFILE}
+        fi
+    done
+
     for file in $(ls bins/*); do
         TARGET_FILE=~/.bin/$(basename ${file})
-        echo -e " $(padded_right $(basename ${file})) (${TARGET_FILE})"
+        echo -e " $(padded_right ${LONGEST} $(basename ${file})) (${TARGET_FILE})"
         if [ -f "${TARGET_FILE}" ]; then
             colordiff -w -u ~/.bin/$(basename ${file}) ${file}
             if [ $? -eq 0 ]; then
@@ -22,9 +30,12 @@ function main(){
 }
 
 function padded_right() {
-    TOPRINT=$1
-    SPACE="\t"
-    echo -e "${TOPRINT}:${SPACE}"
+    LONGEST=$1
+    TOPRINT=$2
+    echo -n -e "${TOPRINT}:"
+    for i in $(seq ${#TOPRINT} ${LONGEST}); do
+        echo -n " "
+    done
 }
 
 main $@
