@@ -54,19 +54,18 @@ function app_volume() {
         echo "${CURRENT_VOLUME}%"
 
         exit
+    fi
+
+    if [ $DIRECTION == "up" ]; then
+        VOLUME_CHANGE="${VOLUME_AMOUNT}%+"
+
+    elif [ $DIRECTION == "down" ]; then
+        VOLUME_CHANGE="${VOLUME_AMOUNT}%-"
 
     else
-        if [ $DIRECTION == "up" ]; then
-            VOLUME_CHANGE="${VOLUME_AMOUNT}%+"
-
-        elif [ $DIRECTION == "down" ]; then
-            VOLUME_CHANGE="${VOLUME_AMOUNT}%-"
-
-        else
-            echo "<direction> must be 'up' or 'down'"
-            display_help
-            exit
-        fi
+        echo "<direction> must be 'up' or 'down'"
+        display_help
+        exit
     fi
 
     CLIENT_ID=$(pw-dump | jq ".[] | select(.type == \"PipeWire:Interface:Node\") | select(.info.props.\"application.name\" != null) | select(.info.props.\"application.name\" | contains(\"${APP_NAME}\")) | .id")
