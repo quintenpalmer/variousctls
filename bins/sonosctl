@@ -192,24 +192,7 @@ function sonos_volume() {
     elif [ $2 == "simplestatus" ]; then
         if [ $(status_query) == "true" ]; then
             set +e
-            PARSED_VOLUME=$(curl \
-                -sS \
-                -X POST \
-                --data-raw "
-            <s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"> \
-              <s:Body> \
-                <u:SetRelativeVolume xmlns:u=\"urn:schemas-upnp-org:service:RenderingControl:1\"> \
-                  <InstanceID>0</InstanceID> \
-                  <Channel>Master</Channel> \
-                  <Adjustment>0</Adjustment> \
-                </u:SetRelativeVolume> \
-              </s:Body> \
-            </s:Envelope> \
-            " \
-                -H 'Content-Type: text/xml' \
-                -H 'SOAPACTION: urn:schemas-upnp-org:service:RenderingControl:1#SetRelativeVolume' \
-                http://${SONOS_IP}:1400/MediaRenderer/RenderingControl/Control | \
-            xmllint --xpath '//NewVolume/text()' -)
+            PARSED_VOLUME=$(get_volume_integer)
             if [ $? == 0 ]; then
                 echo -n ${PARSED_VOLUME}
             else
@@ -225,6 +208,27 @@ function sonos_volume() {
         echo "  to raise, lower, or query for the status of the volume"
         exit
     fi
+}
+
+function get_volume_integer() {
+    echo $(curl \
+        -sS \
+        -X POST \
+        --data-raw "
+    <s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"> \
+      <s:Body> \
+        <u:SetRelativeVolume xmlns:u=\"urn:schemas-upnp-org:service:RenderingControl:1\"> \
+          <InstanceID>0</InstanceID> \
+          <Channel>Master</Channel> \
+          <Adjustment>0</Adjustment> \
+        </u:SetRelativeVolume> \
+      </s:Body> \
+    </s:Envelope> \
+    " \
+        -H 'Content-Type: text/xml' \
+        -H 'SOAPACTION: urn:schemas-upnp-org:service:RenderingControl:1#SetRelativeVolume' \
+        http://${SONOS_IP}:1400/MediaRenderer/RenderingControl/Control | \
+    xmllint --xpath '//NewVolume/text()' -)
 }
 
 function sonos_list_devices() {
