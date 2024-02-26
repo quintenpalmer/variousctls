@@ -6,7 +6,7 @@ for file in $(ls bins/*); do
     if [ -f "${TARGET_FILE}" ]; then
         colordiff -w -u ~/.bin/$(basename ${file}) ${file}
         if [ $? -eq 0 ]; then
-            echo "  <no diff>"
+            echo -e "  \033[1;31m<no diff>\033[0;0m"
         else
             cp -i ${file} ~/.bin/
         fi
