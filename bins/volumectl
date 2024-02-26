@@ -40,11 +40,6 @@ function app_volume() {
     APP_NAME=$1
     DIRECTION=$2
 
-    VOLUME_AMOUNT="4"
-    if [ $# -eq 3 ]; then
-        VOLUME_AMOUNT=$3
-    fi
-
     if [ $DIRECTION == "get" ]; then
 
         CLIENT_ID=$(pw-dump | jq ".[] | select(.type == \"PipeWire:Interface:Node\") | select(.info.props.\"application.name\" != null) | select(.info.props.\"application.name\" | contains(\"${APP_NAME}\")) | .id")
@@ -56,21 +51,23 @@ function app_volume() {
         exit
     fi
 
-    if [ $DIRECTION == "up" ]; then
-        VOLUME_CHANGE="${VOLUME_AMOUNT}%+"
-
-    elif [ $DIRECTION == "down" ]; then
-        VOLUME_CHANGE="${VOLUME_AMOUNT}%-"
-
-    else
+    if [ $DIRECTION != "up" ] && [ $DIRECTION != "down" ]; then
         echo "<direction> must be 'up' or 'down'"
         display_help
         exit
     fi
 
+    OPERATION=${DIRECTION}
+
     CLIENT_ID=$(pw-dump | jq ".[] | select(.type == \"PipeWire:Interface:Node\") | select(.info.props.\"application.name\" != null) | select(.info.props.\"application.name\" | contains(\"${APP_NAME}\")) | .id")
 
-    wpctl set-volume ${CLIENT_ID} "${VOLUME_CHANGE}"
+    CURRENT_VOLUME=$(wpctl get-volume ${CLIENT_ID} | cut -d ':' -f 2 | percentify)
+
+    CONFIG_FILE=~/.config/volumectl/${APP_NAME}
+
+    VOLUME_TO_SET=$(stepper u32 $OPERATION $CURRENT_VOLUME $CONFIG_FILE)
+
+    wpctl set-volume ${CLIENT_ID} "${VOLUME_TO_SET}%"
 
     pkill -SIGRTMIN+5 i3status-rs
 }
