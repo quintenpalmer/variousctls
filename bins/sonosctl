@@ -117,51 +117,40 @@ function sonos_volume() {
         exit
     fi
 
-    SONOS_VOLUME_AMOUNT=4
-    if [ $# -eq 3 ]; then
-        SONOS_VOLUME_AMOUNT=$3
-    fi
+    if [ $2 == "up" ] || [ $2 == "raise" ] || [ $2 == "down" ] || [ $2 == "lower" ]; then
+        CURRENT_VOLUME=$(get_volume_integer)
 
-    if [ $2 == "up" ] || [ $2 == "raise" ]; then
+        CONFIG_FILE=~/.config/sonosctl/volumestep
+
+        if [ $2 == "up" ] || [ $2 == "raise" ]; then
+            OPERATION="up"
+
+        elif [ $2 == "down" ] || [ $2 == "lower" ]; then
+            OPERATION="down"
+
+        else
+            echo "nuooo, that's impossible"
+            exit
+        fi
+
+        SONOS_VOLUME_TO_SET=$(stepper u32 $OPERATION $CURRENT_VOLUME $CONFIG_FILE)
+
         curl \
             -sS \
             -X POST \
             --data-raw "
         <s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"> \
           <s:Body> \
-            <u:SetRelativeVolume xmlns:u=\"urn:schemas-upnp-org:service:RenderingControl:1\"> \
+            <u:SetVolume xmlns:u=\"urn:schemas-upnp-org:service:RenderingControl:1\"> \
               <InstanceID>0</InstanceID> \
               <Channel>Master</Channel> \
-              <Adjustment>${SONOS_VOLUME_AMOUNT}</Adjustment> \
-            </u:SetRelativeVolume> \
+              <DesiredVolume>${SONOS_VOLUME_TO_SET}</DesiredVolume> \
+            </u:SetVolume> \
           </s:Body> \
         </s:Envelope> \
         " \
             -H 'Content-Type: text/xml' \
-            -H 'SOAPACTION: urn:schemas-upnp-org:service:RenderingControl:1#SetRelativeVolume' \
-            http://${SONOS_IP}:1400/MediaRenderer/RenderingControl/Control | \
-        xmllint -format -
-        pkill -SIGRTMIN+4 i3status-rs
-
-        status_on
-
-    elif [ $2 == "down" ] || [ $2 == "lower" ]; then
-        curl \
-            -sS \
-            -X POST \
-            --data-raw "
-        <s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"> \
-          <s:Body> \
-            <u:SetRelativeVolume xmlns:u=\"urn:schemas-upnp-org:service:RenderingControl:1\"> \
-              <InstanceID>0</InstanceID> \
-              <Channel>Master</Channel> \
-              <Adjustment>-${SONOS_VOLUME_AMOUNT}</Adjustment> \
-            </u:SetRelativeVolume> \
-          </s:Body> \
-        </s:Envelope> \
-        " \
-            -H 'Content-Type: text/xml' \
-            -H 'SOAPACTION: urn:schemas-upnp-org:service:RenderingControl:1#SetRelativeVolume' \
+            -H 'SOAPACTION: urn:schemas-upnp-org:service:RenderingControl:1#SetVolume' \
             http://${SONOS_IP}:1400/MediaRenderer/RenderingControl/Control | \
         xmllint -format -
         pkill -SIGRTMIN+4 i3status-rs
