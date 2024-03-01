@@ -6,7 +6,7 @@ set -e
 usage() {
     echo "Usage: screenctl <display> <aspect> <command>"
     echo "    <display> the name of the screen to operate on"
-    echo "    <aspect> one of \"scale\" or \"refresh\""
+    echo "    <aspect> one of \"scale\", \"refresh\", or \"rotate\""
     echo "    <command> one of:"
     echo "        get"
     echo "        get-simple"
@@ -34,6 +34,8 @@ main() {
         change_scale ${DISPLAY} ${OPERATION} $@
     elif [ ${ASPECT} == "refresh" ]; then
         change_refresh ${DISPLAY} ${OPERATION} $@
+    elif [ ${ASPECT} == "rotate" ]; then
+        change_rotation ${DISPLAY} ${OPERATION} $@
     else
         usage
         exit
@@ -127,6 +129,23 @@ change_scale() {
         echo "${CURRENT_X}x${CURRENT_Y}"
     else
         echo "${CURRENT_X}x${CURRENT_Y} ($(printf "%.4f" ${CURRENT_SCALE}))"
+    fi
+}
+
+change_rotation() {
+    DISPLAY=$1
+    OPERATION=$2
+
+    if [ ${OPERATION} == "left" ]; then
+        swaymsg output ${DISPLAY} transform 90 anticlockwise
+        pkill -SIGRTMIN+2 i3status-rs
+    elif [ ${OPERATION} == "right" ]; then
+        swaymsg output ${DISPLAY} transform 90 clockwise
+        pkill -SIGRTMIN+2 i3status-rs
+    else
+        echo "<rotate> argument must be one of \"left\" or \"right\""
+        usage
+        exit
     fi
 }
 
