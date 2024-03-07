@@ -1,0 +1,56 @@
+#!/bin/bash
+
+set -e
+
+display_help() {
+    echo "usage:"
+    echo "  amdpower get          <radeon|gpu>"
+    echo "  amdpower help"
+}
+
+get() {
+    if [ $# -lt 1 ]; then
+        echo "must supply get <gpu|radeon|cpu|ryzen>"
+        exit
+    fi
+
+    SYSTEMTOGET=$1
+
+    if [ ${SYSTEMTOGET} == "gpu" ] || [ ${SYSTEMTOGET} == "radeon" ]; then
+        echo "GPU status"
+        bat /sys/class/drm/card1/device/power_dpm_force_performance_level
+
+    else
+        echo "must supply one of 'gpu', 'cpu', or 'all' to <get>"
+        display_help
+        exit
+
+    fi
+
+}
+
+main() {
+    if [ $# -lt 1 ]; then
+        display_help
+        exit
+    fi
+
+    COMMAND=$1
+
+    shift
+
+    if [ ${COMMAND} == "get" ]; then
+        get $@
+
+    elif [ ${COMMAND} == "help" ] || [ ${COMMAND} == "-h" ] || [ ${COMMAND} == "--help" ]; then
+        display_help
+        exit
+
+    else
+        echo "unknown command: '${COMMAND}'"
+        display_help
+        exit
+    fi
+}
+
+main $@
