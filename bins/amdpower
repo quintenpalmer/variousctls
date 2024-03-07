@@ -4,9 +4,9 @@ set -e
 
 display_help() {
     echo "usage:"
-    echo "  amdpower all          <powersave|performance>"
-    echo "  amdpower <radeon|gpu> <powersave|performance>"
     echo "  amdpower <ryzen|cpu>  <powersave|performance>"
+    echo "  amdpower <radeon|gpu> <powersave|performance>"
+    echo "  amdpower all          <powersave|performance>"
     echo "  amdpower get          <radeon|gpu>"
     echo "  amdpower get          <ryzen|cpu>"
     echo "  amdpower get          all"
