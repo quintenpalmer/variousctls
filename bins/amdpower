@@ -4,9 +4,9 @@ set -e
 
 display_help() {
     echo "usage:"
-    echo "  amdpower <ryzen|cpu>  <powersave|performance>"
-    echo "  amdpower <radeon|gpu> <powersave|performance>"
-    echo "  amdpower all          <powersave|performance>"
+    echo "  amdpower set          <ryzen|cpu>   <powersave|performance>"
+    echo "                        <radeon|gpu>  <powersave|performance>"
+    echo "                        all           <powersave|performance>"
     echo "  amdpower get          <radeon|gpu>"
     echo "                        <ryzen|cpu>"
     echo "                        all"
@@ -71,6 +71,34 @@ gpu() {
     get gpu
 }
 
+setsetting() {
+    if [ $# -lt 2 ]; then
+        echo "must supply set <gpu|radeon|cpu|ryzen|all> <powersave|performance>"
+        exit
+    fi
+
+    SYSTEMTOSET=$1
+
+    shift
+
+    if [ ${SYSTEMTOSET} == "cpu" ] || [ ${SYSTEMTOSET} == "ryzen" ]; then
+        cpu $@
+
+    elif [ ${SYSTEMTOSET} == "gpu" ] || [ ${SYSTEMTOSET} == "radeon" ]; then
+        gpu $@
+
+    elif [ ${SYSTEMTOSET} == "all" ]; then
+        cpu $@
+        gpu $@
+
+    else
+        echo "must supply set with first argument of <gpu|radeon|cpu|ryzen|all>"
+        display_help
+        exit
+
+    fi
+}
+
 get() {
     if [ $# -lt 1 ]; then
         echo "must supply get <gpu|radeon|cpu|ryzen>"
@@ -111,15 +139,8 @@ main() {
 
     shift
 
-    if [ ${COMMAND} == "cpu" ] || [ ${COMMAND} == "ryzen" ]; then
-        cpu $@
-
-    elif [ ${COMMAND} == "gpu" ] || [ ${COMMAND} == "radeon" ]; then
-        gpu $@
-
-    elif [ ${COMMAND} == "all" ]; then
-        cpu $@
-        gpu $@
+    if [ ${COMMAND} == "set" ]; then
+        setsetting $@
 
     elif [ ${COMMAND} == "get" ]; then
         get $@
