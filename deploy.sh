@@ -20,7 +20,7 @@ function main(){
                 cp -i ${file} ~/.bin/
             fi
         else
-            echo "  <no target file>"
+            echo -e "  \033[1;32m<no target file>\033[0;0m"
             # We still use the -i
             # just in case a file has snuck in
             # since we asked if it existed above
