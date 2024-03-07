@@ -4,6 +4,7 @@ set -e
 
 display_help() {
     echo "usage:"
+    echo "  amdpower all          <powersave|performance>"
     echo "  amdpower <radeon|gpu> <powersave|performance>"
     echo "  amdpower <ryzen|cpu>  <powersave|performance>"
     echo "  amdpower get          <radeon|gpu>"
@@ -114,6 +115,10 @@ main() {
         cpu $@
 
     elif [ ${COMMAND} == "gpu" ] || [ ${COMMAND} == "radeon" ]; then
+        gpu $@
+
+    elif [ ${COMMAND} == "all" ]; then
+        cpu $@
         gpu $@
 
     elif [ ${COMMAND} == "get" ]; then
