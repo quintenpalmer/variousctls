@@ -8,8 +8,8 @@ display_help() {
     echo "  amdpower <radeon|gpu> <powersave|performance>"
     echo "  amdpower all          <powersave|performance>"
     echo "  amdpower get          <radeon|gpu>"
-    echo "  amdpower get          <ryzen|cpu>"
-    echo "  amdpower get          all"
+    echo "                        <ryzen|cpu>"
+    echo "                        all"
     echo "  amdpower help"
 }
 
