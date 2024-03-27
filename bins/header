@@ -14,6 +14,9 @@ CMD=$1
 shift
 ARGS=$@
 
+# Store the old IFS to reset after capturing the header
+OLD_IFS=${IFS}
+
 # Sets IFS (Internal Field Separator) to nothing that all original spaces are preserved
 # We want to capture the line as-is and do not wish to change it in any way
 IFS=''
@@ -22,6 +25,9 @@ for (( i = 0 ; i < ${COUNTER} ; i++ ));  do
     read header
     echo $header
 done
+
+# Restore the old IFS now that we've captured the header
+IFS=${OLD_IFS}
 
 # run the captured command with the rest of standard input
 $CMD $ARGS < /dev/stdin
