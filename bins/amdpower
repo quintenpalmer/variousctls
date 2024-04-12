@@ -6,9 +6,11 @@ display_help() {
     echo "usage:"
     echo "  amdpower set          <ryzen|cpu>   <powersave|performance>"
     echo "                        <radeon|gpu>  <powersave|performance>"
+    echo "                        <sys|system>  <powersave|performance>"
     echo "                        all           <powersave|performance>"
     echo "  amdpower get          <radeon|gpu>"
     echo "                        <ryzen|cpu>"
+    echo "                        <sys|system>"
     echo "                        all"
     echo "  amdpower help"
 }
@@ -71,6 +73,31 @@ gpu() {
     get gpu
 }
 
+system() {
+    if [ $# -lt 1 ]; then
+        echo "must supply <radeon|gpu> <powersave|performance>"
+        exit
+    fi
+
+    POWERMODE=$1
+
+    if [ ${POWERMODE} == "performance" ]; then
+        echo on | doas tee /sys/bus/i2c/devices/*/device/power/control
+        echo on | doas tee /sys/bus/pci/devices/*/power/control
+
+    elif [ ${POWERMODE} == "powersave" ]; then
+        echo auto | doas tee /sys/bus/i2c/devices/*/device/power/control
+        echo auto | doas tee /sys/bus/pci/devices/*/power/control
+
+    else
+        display_help
+        exit
+
+    fi
+
+    get sys
+}
+
 setsetting() {
     if [ $# -lt 2 ]; then
         echo "must supply set <gpu|radeon|cpu|ryzen|all> <powersave|performance>"
@@ -87,9 +114,13 @@ setsetting() {
     elif [ ${SYSTEMTOSET} == "gpu" ] || [ ${SYSTEMTOSET} == "radeon" ]; then
         gpu $@
 
+    elif [ ${SYSTEMTOSET} == "sys" ] || [ ${SYSTEMTOSET} == "system" ]; then
+        system $@
+
     elif [ ${SYSTEMTOSET} == "all" ]; then
         cpu $@
         gpu $@
+        system $@
 
     else
         echo "must supply set with first argument of <gpu|radeon|cpu|ryzen|all>"
@@ -110,6 +141,7 @@ get() {
     if [ ${SYSTEMTOGET} == "all" ]; then
         get cpu
         get gpu
+        get sys
 
     elif [ ${SYSTEMTOGET} == "cpu" ] || [ ${SYSTEMTOGET} == "ryzen" ]; then
         echo "CPU status"
@@ -119,6 +151,11 @@ get() {
     elif [ ${SYSTEMTOGET} == "gpu" ] || [ ${SYSTEMTOGET} == "radeon" ]; then
         echo "GPU status"
         bat /sys/class/drm/card1/device/power_dpm_force_performance_level
+
+    elif [ ${SYSTEMTOGET} == "sys" ] || [ ${SYSTEMTOGET} == "system" ]; then
+        echo "System status"
+        bat --style header-filename /sys/bus/pci/devices/*/power/control
+        bat --style header-filename /sys/bus/i2c/devices/*/device/power/control
 
     else
         echo "must supply one of 'gpu', 'cpu', or 'all' to <get>"
