@@ -17,7 +17,7 @@ def shorten_path(full_path):
 
 
 def pretty_path(full_path):
-    full_path = re.sub('/home/\w+', '~', full_path)
+    full_path = re.sub(r'/home/\w+', '~', full_path)
     return shorten_path(full_path)
 
 if __name__ == '__main__':
