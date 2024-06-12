@@ -1,0 +1,44 @@
+#!/bin/bash
+
+echo "CPU:"
+
+echo '  Name:'
+cat /proc/cpuinfo  | rg 'model name' | uniq | cut -d ':' -f 2 | xargs | sed 's/^/    /'
+
+echo ""
+
+echo "RAM:"
+
+echo '  Usage:'
+USEDRAM=$(free --mega | grep "Mem" | awk '{printf("%5.1fG", $3 / 1000)}' | xargs)
+TOTALRAM=$(free --mega | grep "Mem" | awk '{printf("%5.1fG", $2 / 1000)}' | xargs)
+echo "${USEDRAM} / ${TOTALRAM}" | sed 's/^/    /'
+
+echo ""
+
+echo "GPU:"
+
+echo "  Name:"
+glxinfo  | rg "Device" | cut -d ":" -f 2 | cut -d "(" -f 1 | xargs | sed 's/^/    /'
+
+echo ""
+
+echo "Internet:"
+
+NETWORKNAME=$(jq ".network_name" ~/.config/wifictl/config.json | tr -d '"')
+
+WIFINETWORK=$(ip -j add | jq ".[] | select(.ifname == \"${NETWORKNAME}\")")
+
+echo "  ${NETWORKNAME}"
+echo "    status: $(echo ${WIFINETWORK} | jq .operstate           | tr -d '"')"
+echo "    family: $(echo ${WIFINETWORK} | jq .addr_info[0].family | tr -d '"')"
+echo "    addr:   $(echo ${WIFINETWORK} | jq .addr_info[0].local  | tr -d '"')"
+
+echo ""
+
+echo "Disk(s):"
+
+echo "  Usage:"
+df -h | header 2 sort | header 1 rg --color never '^/' | sed 's/^/    /'
+
+echo ""
