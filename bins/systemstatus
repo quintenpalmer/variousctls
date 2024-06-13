@@ -23,6 +23,18 @@ glxinfo  | rg "Device" | cut -d ":" -f 2 | cut -d "(" -f 1 | xargs | sed 's/^/  
 
 echo ""
 
+echo "Display(s):"
+
+echo "  Main:"
+
+WIDTH=$(swaymsg -t get_outputs | jq '.[0].rect.width')
+HEIGHT=$(swaymsg -t get_outputs | jq '.[0].rect.height')
+REFRESH=$(swaymsg -t get_outputs | jq '.[0].current_mode.refresh' | python -c 'import sys; print(round(int(sys.stdin.readlines()[0].strip("\n"))/1000))')
+
+echo "${WIDTH}x${HEIGHT} @ ${REFRESH}Hz" | sed 's/^/    /'
+
+echo ""
+
 echo "Internet:"
 
 NETWORKNAME=$(jq ".network_name" ~/.config/wifictl/config.json | tr -d '"')
