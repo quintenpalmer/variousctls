@@ -35,6 +35,14 @@ echo "${WIDTH}x${HEIGHT} @ ${REFRESH}Hz" | sed 's/^/    /'
 
 echo ""
 
+echo "Audio:"
+
+echo "  Main:"
+
+echo "$(wpctl get-volume @DEFAULT_SINK@ | cut -d ':' -f 2 | percentify)%" | sed 's/^/    /'
+
+echo ""
+
 echo "Internet:"
 
 NETWORKNAME=$(jq ".network_name" ~/.config/wifictl/config.json | tr -d '"')
