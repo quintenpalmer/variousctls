@@ -49,7 +49,7 @@ NETWORKNAME=$(jq ".network_name" ~/.config/wifictl/config.json | tr -d '"')
 
 WIFINETWORK=$(ip -j add | jq ".[] | select(.ifname == \"${NETWORKNAME}\")")
 
-echo "  ${NETWORKNAME}"
+echo "  ${NETWORKNAME}:"
 echo "    status: $(echo ${WIFINETWORK} | jq .operstate           | tr -d '"')"
 echo "    family: $(echo ${WIFINETWORK} | jq .addr_info[0].family | tr -d '"')"
 echo "    addr:   $(echo ${WIFINETWORK} | jq .addr_info[0].local  | tr -d '"')"
