@@ -4,11 +4,25 @@ import sys
 import fractions
 
 def main():
+    mode = "normal"
+
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "-r":
+            mode = "reverse"
+
     input_fraction = fractions.Fraction(sys.stdin.read())
 
-    percentage = input_fraction * 100
+    if mode == "normal":
+        percentage = int(input_fraction * 100)
 
-    print(percentage)
+        print(percentage)
+    elif mode == "reverse":
+        percentage = float(input_fraction / 100)
+
+        print("%.2f" % percentage)
+    else:
+        raise Exception("invalid percentify mode")
+
 
 if __name__ == '__main__':
     main()
