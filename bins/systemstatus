@@ -2,13 +2,13 @@
 
 echo "CPU:"
 
+cat /proc/cpuinfo  | rg 'model name' | uniq | cut -d ':' -f 2 | xargs | sed 's/^/    /'
+
 CPUHUNDREDS=$(top -b -n 1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print (100 - $1) * 100}')
 
 CPUDISPLAY=$(echo ${CPUHUNDREDS} | percentify -r | awk '{printf("Total: " $1 "%\n")}')
 
 echo ${CPUDISPLAY} | sed 's/^/    /'
-
-cat /proc/cpuinfo  | rg 'model name' | uniq | cut -d ':' -f 2 | xargs | sed 's/^/    /'
 
 echo ""
 
