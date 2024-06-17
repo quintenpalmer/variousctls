@@ -4,6 +4,14 @@ echo "CPU:"
 
 cat /proc/cpuinfo  | rg 'model name' | uniq | cut -d ':' -f 2 | xargs | sed 's/^/    /'
 
+CPUENERGYPREFS=$(bat /sys/devices/system/cpu/cpu*/cpufreq/energy_performance_preference | sort -u)
+
+echo "Energy Pref: ${CPUENERGYPREFS}" | sed 's/^/    /'
+
+CPUSCALINGGOVS=$(bat /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor | sort -u)
+
+echo "Scaling Gov: ${CPUSCALINGGOVS}" | sed 's/^/    /'
+
 CPUHUNDREDS=$(top -b -n 1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print (100 - $1) * 100}')
 
 CPUDISPLAY=$(echo ${CPUHUNDREDS} | percentify -r | awk '{printf("Total: " $1 "%\n")}')
