@@ -32,6 +32,10 @@ echo "GPU:"
 
 glxinfo  | rg "Device" | cut -d ":" -f 2 | cut -d "(" -f 1 | xargs | sed 's/^/    /'
 
+GPUPERFLEVEL=$(cat /sys/class/drm/card1/device/power_dpm_force_performance_level)
+
+echo "Perf Level: ${GPUPERFLEVEL}" | sed 's/^/    /'
+
 GPUPERCENT=$(radeontop -l 1 -d - | rg ghz | sed 's/.*gpu \(.*\)%, ee.*/\1/')
 
 echo "Total: ${GPUPERCENT}%" | sed 's/^/    /'
