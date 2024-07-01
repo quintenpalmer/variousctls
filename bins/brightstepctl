@@ -4,9 +4,9 @@ set -e
 
 display_help() {
     echo "usage:"
-    echo "  brightnessctl up"
-    echo "  brightnessctl down"
-    echo "  brightnessctl help"
+    echo "  brightstepctl up"
+    echo "  brightstepctl down"
+    echo "  brightstepctl help"
 }
 
 function move_brightness() {
@@ -14,7 +14,7 @@ function move_brightness() {
 
     CURRENT_BRIGHTNESS=$(brightnessctl -m get)
 
-    CONFIG_FILE=~/.config/brightnessctl/config
+    CONFIG_FILE=~/.config/brightstepctl/config
 
     if [ $# -eq 3 ]; then
         CONFIG_FILE=$2
