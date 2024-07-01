@@ -12,7 +12,7 @@ display_help() {
 function move_brightness() {
     OPERATION=$1
 
-    CURRENT_BRIGHTNESS=$(xbacklight -get)
+    CURRENT_BRIGHTNESS=$(brightnessctl -m get)
 
     CONFIG_FILE=~/.config/brightnessctl/config
 
@@ -22,7 +22,7 @@ function move_brightness() {
 
     BRIGHTNESS_TO_SET=$(stepper u32 $OPERATION $CURRENT_BRIGHTNESS $CONFIG_FILE)
 
-    xbacklight -set "${BRIGHTNESS_TO_SET}"
+    brightnessctl -m set "${BRIGHTNESS_TO_SET}"
 }
 
 main() {
