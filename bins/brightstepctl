@@ -22,7 +22,9 @@ function move_brightness() {
 
     BRIGHTNESS_TO_SET=$(stepper u32 $OPERATION $CURRENT_BRIGHTNESS $CONFIG_FILE)
 
-    brightnessctl -m set "${BRIGHTNESS_TO_SET}"
+    brightnessctl -q -m set "${BRIGHTNESS_TO_SET}"
+
+    brightnessctl -m get
 }
 
 main() {
