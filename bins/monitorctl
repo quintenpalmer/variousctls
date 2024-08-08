@@ -1,0 +1,69 @@
+#!/bin/bash
+
+set -e
+
+display_help() {
+    echo "usage:"
+    echo "  monitorctl brightness external set <val>"
+    echo "  monitorctl help"
+}
+
+function select_external_brightness () {
+    if [ $# -lt 1 ]; then
+        display_help
+        exit
+    fi
+
+    BRIGHTNESS_TO_SET=$1
+
+    ddcutil setvcp 10 "${BRIGHTNESS_TO_SET}"
+
+    ddcutil getvcp -t 10
+}
+
+main() {
+    if [ $# -lt 1 ]; then
+        display_help
+        exit
+    fi
+
+    ASPECT=$1
+    shift
+
+    if [ ${ASPECT} == "brightness" ]; then
+        if [ $# -lt 1 ]; then
+            display_help
+            exit
+        fi
+        MONITOR_TYPE=$1
+        shift
+
+        if [ ${MONITOR_TYPE} == "external" ]; then
+            if [ $# -lt 1 ]; then
+                display_help
+                exit
+            fi
+            ACTION=$1
+            shift
+
+            if [ ${ACTION} == "set" ]; then
+                if [ $# -lt 1 ]; then
+                    display_help
+                    exit
+                fi
+                select_external_brightness $@
+            else
+                display_help
+                exit
+            fi
+        else
+            display_help
+            exit
+        fi
+    else
+        display_help
+        exit
+    fi
+}
+
+main $@
