@@ -1,0 +1,19 @@
+#!/bin/bash
+
+if [ $# -lt 2 ] ; then
+    echo 'usage:'
+    echo ' repeat <REPEAT-COUNT> <CMD> <CMD-ARGS>'
+    echo '    <SKIP-COUNT> is how many times you want to run the command'
+    echo '    <CMD> is the command you want to run'
+    echo '    <CMD-ARGS> are the arguments to pass to the command'
+fi
+
+REPEAT_COUNT=$1
+shift
+CMD=$1
+shift
+ARGS=$@
+
+for i in $(seq 1 ${REPEAT_COUNT}); do
+    $CMD $ARGS < /dev/stdin
+done
