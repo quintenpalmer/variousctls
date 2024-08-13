@@ -18,7 +18,12 @@ function select_external_brightness () {
 
     ddcutil setvcp 10 "${BRIGHTNESS_TO_SET}"
 
-    ddcutil getvcp -t 10
+    get_external_brightness
+}
+
+function get_external_brightness() {
+    ddcutil getvcp -t 10 | awk '{printf $4}'
+    echo '%'
 }
 
 main() {
@@ -52,6 +57,8 @@ main() {
                     exit
                 fi
                 select_external_brightness $@
+            elif [ ${ACTION} == "get" ]; then
+                get_external_brightness
             else
                 display_help
                 exit
