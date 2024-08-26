@@ -89,10 +89,14 @@ function disk_status() {
     echo ""
 }
 
-cpu_status
-ram_status
-gpu_status
-display_status
-audio_status
-internet_status
-disk_status
+function main() {
+    cpu_status
+    ram_status
+    gpu_status
+    display_status
+    audio_status
+    internet_status
+    disk_status
+}
+
+main $@
