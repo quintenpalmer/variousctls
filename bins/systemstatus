@@ -1,76 +1,98 @@
 #!/bin/bash
 
-echo "CPU:"
+function cpu_status() {
+    echo "CPU:"
 
-cat /proc/cpuinfo  | rg 'model name' | uniq | cut -d ':' -f 2 | xargs | sed 's/^/    /'
+    cat /proc/cpuinfo  | rg 'model name' | uniq | cut -d ':' -f 2 | xargs | sed 's/^/    /'
 
-CPUENERGYPREFS=$(bat /sys/devices/system/cpu/cpu*/cpufreq/energy_performance_preference | sort -u)
+    CPUENERGYPREFS=$(bat /sys/devices/system/cpu/cpu*/cpufreq/energy_performance_preference | sort -u)
 
-echo "Energy Pref: ${CPUENERGYPREFS}" | sed 's/^/    /'
+    echo "Energy Pref: ${CPUENERGYPREFS}" | sed 's/^/    /'
 
-CPUSCALINGGOVS=$(bat /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor | sort -u)
+    CPUSCALINGGOVS=$(bat /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor | sort -u)
 
-echo "Scaling Gov: ${CPUSCALINGGOVS}" | sed 's/^/    /'
+    echo "Scaling Gov: ${CPUSCALINGGOVS}" | sed 's/^/    /'
 
-CPUHUNDREDS=$(top -b -n 1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print (100 - $1) * 100}')
+    CPUHUNDREDS=$(top -b -n 1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print (100 - $1) * 100}')
 
-CPUDISPLAY=$(echo ${CPUHUNDREDS} | percentify -r | awk '{printf("Total: " $1 "%\n")}')
+    CPUDISPLAY=$(echo ${CPUHUNDREDS} | percentify -r | awk '{printf("Total: " $1 "%\n")}')
 
-echo ${CPUDISPLAY} | sed 's/^/    /'
+    echo ${CPUDISPLAY} | sed 's/^/    /'
 
-echo ""
+    echo ""
+}
 
-echo "RAM:"
+function ram_status() {
+    echo "RAM:"
 
-USEDRAM=$(free --mega | grep "Mem" | awk '{printf("%5.1fG", $3 / 1000)}' | xargs)
-TOTALRAM=$(free --mega | grep "Mem" | awk '{printf("%5.1fG", $2 / 1000)}' | xargs)
-echo "${USEDRAM} / ${TOTALRAM}" | sed 's/^/    /'
+    USEDRAM=$(free --mega | grep "Mem" | awk '{printf("%5.1fG", $3 / 1000)}' | xargs)
+    TOTALRAM=$(free --mega | grep "Mem" | awk '{printf("%5.1fG", $2 / 1000)}' | xargs)
+    echo "${USEDRAM} / ${TOTALRAM}" | sed 's/^/    /'
 
-echo ""
+    echo ""
+}
 
-echo "GPU:"
+function gpu_status() {
+    echo "GPU:"
 
-glxinfo  | rg "Device" | cut -d ":" -f 2 | cut -d "(" -f 1 | xargs | sed 's/^/    /'
+    glxinfo  | rg "Device" | cut -d ":" -f 2 | cut -d "(" -f 1 | xargs | sed 's/^/    /'
 
-GPUPERFLEVEL=$(cat /sys/class/drm/card1/device/power_dpm_force_performance_level)
+    GPUPERFLEVEL=$(cat /sys/class/drm/card1/device/power_dpm_force_performance_level)
 
-echo "Perf Level: ${GPUPERFLEVEL}" | sed 's/^/    /'
+    echo "Perf Level: ${GPUPERFLEVEL}" | sed 's/^/    /'
 
-GPUPERCENT=$(radeontop -l 1 -d - | rg ghz | sed 's/.*gpu \(.*\)%, ee.*/\1/')
+    GPUPERCENT=$(radeontop -l 1 -d - | rg ghz | sed 's/.*gpu \(.*\)%, ee.*/\1/')
 
-echo "Total: ${GPUPERCENT}%" | sed 's/^/    /'
+    echo "Total: ${GPUPERCENT}%" | sed 's/^/    /'
 
-echo ""
+    echo ""
+}
 
-echo "Display(s):"
+function display_status() {
+    echo "Display(s):"
 
-WIDTH=$(swaymsg -t get_outputs | jq '.[0].rect.width')
-HEIGHT=$(swaymsg -t get_outputs | jq '.[0].rect.height')
-REFRESH=$(swaymsg -t get_outputs | jq '.[0].current_mode.refresh' | python -c 'import sys; print(round(int(sys.stdin.readlines()[0].strip("\n"))/1000))')
+    WIDTH=$(swaymsg -t get_outputs | jq '.[0].rect.width')
+    HEIGHT=$(swaymsg -t get_outputs | jq '.[0].rect.height')
+    REFRESH=$(swaymsg -t get_outputs | jq '.[0].current_mode.refresh' | python -c 'import sys; print(round(int(sys.stdin.readlines()[0].strip("\n"))/1000))')
 
-echo "${WIDTH}x${HEIGHT} @ ${REFRESH}Hz" | sed 's/^/    /'
+    echo "${WIDTH}x${HEIGHT} @ ${REFRESH}Hz" | sed 's/^/    /'
 
-echo ""
+    echo ""
+}
 
-echo "Audio:"
+function audio_status() {
+    echo "Audio:"
 
-echo "$(wpctl get-volume @DEFAULT_SINK@ | cut -d ':' -f 2 | percentify)%" | sed 's/^/    /'
+    echo "$(wpctl get-volume @DEFAULT_SINK@ | cut -d ':' -f 2 | percentify)%" | sed 's/^/    /'
 
-echo ""
+    echo ""
+}
 
-echo "Internet:"
+function internet_status() {
+    echo "Internet:"
 
-NETWORKNAME=$(jq ".network_name" ~/.config/wifictl/config.json | tr -d '"')
-WIFINETWORK=$(ip -j add | jq ".[] | select(.ifname == \"${NETWORKNAME}\")")
+    NETWORKNAME=$(jq ".network_name" ~/.config/wifictl/config.json | tr -d '"')
+    WIFINETWORK=$(ip -j add | jq ".[] | select(.ifname == \"${NETWORKNAME}\")")
 
-echo "    name:   ${NETWORKNAME}"
-echo "    status: $(echo ${WIFINETWORK} | jq .operstate           | tr -d '"')"
-echo "    family: $(echo ${WIFINETWORK} | jq .addr_info[0].family | tr -d '"')"
-echo "    addr:   $(echo ${WIFINETWORK} | jq .addr_info[0].local  | tr -d '"')"
+    echo "    name:   ${NETWORKNAME}"
+    echo "    status: $(echo ${WIFINETWORK} | jq .operstate           | tr -d '"')"
+    echo "    family: $(echo ${WIFINETWORK} | jq .addr_info[0].family | tr -d '"')"
+    echo "    addr:   $(echo ${WIFINETWORK} | jq .addr_info[0].local  | tr -d '"')"
 
-echo ""
+    echo ""
+}
 
-echo "Disk(s):"
-df -h | header 2 sort | header 1 rg --color never '^/' | sed 's/^/    /'
+function disk_status() {
+    echo "Disk(s):"
+    df -h | header 2 sort | header 1 rg --color never '^/' | sed 's/^/    /'
 
-echo ""
+    echo ""
+}
+
+cpu_status
+ram_status
+gpu_status
+display_status
+audio_status
+internet_status
+disk_status

@@ -178,6 +178,14 @@ get() {
 
 }
 
+pretty_display() {
+    if [ $# -lt 2 ]; then
+        echo "improper use of internal function: pretty_display"
+        display_help
+        exit
+    fi
+}
+
 main() {
     if [ $# -lt 1 ]; then
         display_help
