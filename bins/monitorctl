@@ -56,7 +56,11 @@ main() {
                     display_help
                     exit
                 fi
+
                 select_external_brightness $@
+
+                pkill -SIGRTMIN+7 i3status-rs
+
             elif [ ${ACTION} == "get" ]; then
                 get_external_brightness
             else
