@@ -4,6 +4,8 @@
 function cpu_status() {
     echo "CPU:"
 
+    cat /proc/cpuinfo  | rg 'model name' | uniq | cut -d ':' -f 2 | xargs | sed 's/^/    /'
+
     if [ $# -gt 0 ]; then
         if [ $1 == "true" ]; then
             CPUENERGYPREFS=$(bat /sys/devices/system/cpu/cpu*/cpufreq/energy_performance_preference | sort -u)
@@ -11,8 +13,6 @@ function cpu_status() {
             echo "Energy Pref: ${CPUENERGYPREFS}" | sed 's/^/    /'
         fi
     fi
-
-    cat /proc/cpuinfo  | rg 'model name' | uniq | cut -d ':' -f 2 | xargs | sed 's/^/    /'
 
     CPUSCALINGGOVS=$(bat /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor | sort -u)
 
