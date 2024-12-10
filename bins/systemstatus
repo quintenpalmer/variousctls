@@ -44,7 +44,7 @@ function gpu_status() {
 
     glxinfo  | rg "Device" | cut -d ":" -f 2 | cut -d "(" -f 1 | xargs | sed 's/^/    /'
 
-    GPUPERFLEVEL=$(cat /sys/class/drm/card1/device/power_dpm_force_performance_level)
+    GPUPERFLEVEL=$(cat /sys/class/drm/card0/device/power_dpm_force_performance_level)
 
     echo "Perf Level: ${GPUPERFLEVEL}" | sed 's/^/    /'
 
