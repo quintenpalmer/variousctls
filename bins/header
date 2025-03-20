@@ -7,9 +7,10 @@ if [ $# -lt 2 ] ; then
     echo '    <CMD-ARGS> are the arguments to pass to the command'
 fi
 
-# Capture entire command passed as command line arguments to this script
+# Capture the number of lines that should be counted as header(s)
 COUNTER=$1
 shift
+# Capture entire command passed as command line arguments to this script
 CMD=$1
 shift
 ARGS=$@
