@@ -49,6 +49,16 @@ split_workspace() {
     done
 }
 
+unsplit_workspace() {
+    WORKSPACE_ID=$(niri msg --json workspaces | jq '.[] | select(.is_active == true).id')
+
+    WINDOW_IDS=$(niri msg --json windows | jq ".[] | select(.workspace_id == ${WORKSPACE_ID}).id")
+
+    for ID in ${WINDOW_IDS}; do
+        niri msg action set-window-width --id ${ID} "98%"
+    done
+}
+
 main() {
     if [ $# -lt 1 ]; then
         display_help
@@ -65,6 +75,8 @@ main() {
         resize_to_original
     elif [ $1 == "split-workspace" ]; then
         split_workspace
+    elif [ $1 == "unsplit-workspace" ]; then
+        unsplit_workspace
     else
         display_help
     fi
