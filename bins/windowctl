@@ -35,6 +35,20 @@ resize_to_original() {
     swaymsg move position center
 }
 
+split_workspace() {
+    WORKSPACE_ID=$(niri msg --json workspaces | jq '.[] | select(.is_active == true).id')
+
+    WINDOW_IDS=$(niri msg --json windows | jq ".[] | select(.workspace_id == ${WORKSPACE_ID}).id")
+
+    LEN=$(echo ${WINDOW_IDS} | wc -w)
+
+    PERCENT=$(echo ${LEN} | python -c 'import sys; print(100.0 / float(sys.stdin.read().strip()))')
+
+    for ID in ${WINDOW_IDS}; do
+        niri msg action set-window-width --id ${ID} "${PERCENT}%"
+    done
+}
+
 main() {
     if [ $# -lt 1 ]; then
         display_help
@@ -49,6 +63,8 @@ main() {
         toggle_sticky
     elif [ $1 == "resize-to-original" ]; then
         resize_to_original
+    elif [ $1 == "split-workspace" ]; then
+        split_workspace
     else
         display_help
     fi
